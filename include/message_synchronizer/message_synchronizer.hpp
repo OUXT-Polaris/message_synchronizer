@@ -78,12 +78,16 @@ public:
     NodeT && node,
     std::chrono::milliseconds poll_duration,
     std::chrono::milliseconds allow_delay)
+  : poll_duration(poll_duration), 
+    allow_delay(allow_delay)
   {
     callback_registered_ = false;
     clock_ptr_ = node->get_clock();
     timer_ = node->create_wall_timer(poll_duration, std::bind(&SynchronizerBase::poll, this));
   }
   virtual void poll() = 0;
+  const std::chrono::milliseconds allow_delay;
+  const std::chrono::milliseconds poll_duration;
 
 protected:
   rclcpp::TimerBase::SharedPtr timer_;
@@ -117,6 +121,7 @@ public:
   {
     if (callback_registered_) {
       rclcpp::Time stamp = clock_ptr_->now();
+      stamp = stamp - allow_delay;
       callback_(sub0_.query(stamp), sub1_.query(stamp));
     }
   }
