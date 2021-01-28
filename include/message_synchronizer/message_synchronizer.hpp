@@ -92,6 +92,7 @@ public:
       const boost::optional<const std::shared_ptr<T1>> &)> callback)
   {
     callback_ = callback;
+    callback_registered_ = true;
   }
   void poll()
   {

@@ -27,12 +27,29 @@ public:
   explicit Example(const rclcpp::NodeOptions & option)
   : Node("example", option), sync_(this, {"/input0", "/input1"})
   {
+    const auto func = std::bind(
+      &Example::callback, this, std::placeholders::_1,
+      std::placeholders::_2);
+    sync_.registerCallback(func);
   }
 
 private:
   message_synchronizer::MessageSynchronizer<
     sensor_msgs::msg::PointCloud2,
     sensor_msgs::msg::PointCloud2> sync_;
+  void callback(
+    const boost::optional<const std::shared_ptr<sensor_msgs::msg::PointCloud2>> & msg0,
+    const boost::optional<const std::shared_ptr<sensor_msgs::msg::PointCloud2>> & msg1
+  )
+  {
+    if (msg0) {
+      std::cout << __FILE__ << "," << __LINE__ << std::endl;
+    }
+    if (msg1) {
+      std::cout << __FILE__ << "," << __LINE__ << std::endl;
+    }
+    std::cout << __FILE__ << "," << __LINE__ << std::endl;
+  }
 };
 
 int main(int argc, char * argv[])
