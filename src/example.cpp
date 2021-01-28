@@ -20,12 +20,16 @@
 
 #include <memory>
 #include <string>
+#include <chrono>
 
 class Example : public rclcpp::Node
 {
 public:
   explicit Example(const rclcpp::NodeOptions & option)
-  : Node("example", option), sync_(this, {"/input0", "/input1"})
+  : Node("example", option), 
+    sync_(this, {"/input0", "/input1"},
+    std::chrono::milliseconds{100},
+    std::chrono::milliseconds{10})
   {
     const auto func = std::bind(
       &Example::callback, this, std::placeholders::_1,

@@ -76,6 +76,8 @@ public:
   template<class NodeT, class AllocatorT = std::allocator<void>>
   MessageSynchronizer(
     NodeT && node, std::vector<std::string> topic_names,
+    std::chrono::milliseconds poll_duration,
+    std::chrono::milliseconds allow_delay,
     const rclcpp::SubscriptionOptionsWithAllocator<AllocatorT> & options =
     rclcpp::SubscriptionOptionsWithAllocator<AllocatorT>())
   : sub0_(topic_names[0], node, options),
@@ -83,8 +85,7 @@ public:
   {
     callback_registered_ = false;
     clock_ptr_ = node->get_clock();
-    using namespace std::chrono_literals;
-    timer_ = node->create_wall_timer(100ms, std::bind(&MessageSynchronizer::poll, this));
+    timer_ = node->create_wall_timer(poll_duration, std::bind(&MessageSynchronizer::poll, this));
   }
   void registerCallback(
     std::function<void(
