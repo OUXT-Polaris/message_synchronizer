@@ -55,10 +55,17 @@ private:
   }
   boost::optional<const std::shared_ptr<T>> query(rclcpp::Time stamp)
   {
+    std::vector<double> diff;
     for (const auto buf :  buffer_) {
-      const auto stamp = buf.header.stamp;
+      const auto msg_stamp = buf.header.stamp;
+      diff.emplace_back(std::fabs(stamp - msg_stamp));
     }
-    return boost::none;
+    if (diff.size() == 0) {
+      return boost::none;
+    }
+    std::vector<double>::iterator iter = std::min_element(diff.begin(), diff.end());
+    size_t index = std::distance(diff.begin(), iter);
+    return buffer_[index];
   }
 };
 
@@ -71,8 +78,8 @@ public:
     NodeT && node, std::vector<std::string> topic_names,
     const rclcpp::SubscriptionOptionsWithAllocator<AllocatorT> & options =
     rclcpp::SubscriptionOptionsWithAllocator<AllocatorT>())
-  : sub0_(topic_names[0], node),
-    sub1_(topic_names[1], node)
+  : sub0_(topic_names[0], node, options),
+    sub1_(topic_names[1], node, options)
   {
     clock_ptr_ = node->get_clock();
   }
@@ -87,9 +94,7 @@ public:
 private:
   void query(rclcpp::Time stamp)
   {
-    const auto msg0 = sub0_.query(stamp);
-    const auto msg1 = sub1_.query(stamp);
-    callback_(msg0, msg1);
+    callback_(sub0_.query(stamp), sub1_.query(stamp));
   }
   std::shared_ptr<rclcpp::Clock> clock_ptr_;
   StampedMessageSubscriber<T0> sub0_;
