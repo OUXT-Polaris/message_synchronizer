@@ -26,10 +26,12 @@ class Example : public rclcpp::Node
 {
 public:
   explicit Example(const rclcpp::NodeOptions & option)
-  : Node("example", option), 
-    sync_(this, {"/input0", "/input1"},
-    std::chrono::milliseconds{100},
-    std::chrono::milliseconds{10})
+  : Node("example", option),
+    sync_(this,
+      {"/perception/front_lidar/points_transform_node/output",
+        "/perception/rear_lidar/points_transform_node/output"},
+      std::chrono::milliseconds{100},
+      std::chrono::milliseconds{10})
   {
     const auto func = std::bind(
       &Example::callback, this, std::placeholders::_1,

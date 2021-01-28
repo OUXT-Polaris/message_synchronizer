@@ -69,8 +69,30 @@ private:
   }
 };
 
+
+class SynchronizerBase
+{
+public:
+  template<class NodeT, class AllocatorT = std::allocator<void>>
+  SynchronizerBase(
+    NodeT && node,
+    std::chrono::milliseconds poll_duration,
+    std::chrono::milliseconds allow_delay)
+  {
+    callback_registered_ = false;
+    clock_ptr_ = node->get_clock();
+    timer_ = node->create_wall_timer(poll_duration, std::bind(&SynchronizerBase::poll, this));
+  }
+  virtual void poll() = 0;
+
+protected:
+  rclcpp::TimerBase::SharedPtr timer_;
+  bool callback_registered_;
+  std::shared_ptr<rclcpp::Clock> clock_ptr_;
+};
+
 template<typename T0, typename T1>
-class MessageSynchronizer
+class MessageSynchronizer : public SynchronizerBase
 {
 public:
   template<class NodeT, class AllocatorT = std::allocator<void>>
@@ -80,13 +102,9 @@ public:
     std::chrono::milliseconds allow_delay,
     const rclcpp::SubscriptionOptionsWithAllocator<AllocatorT> & options =
     rclcpp::SubscriptionOptionsWithAllocator<AllocatorT>())
-  : sub0_(topic_names[0], node, options),
-    sub1_(topic_names[1], node, options)
-  {
-    callback_registered_ = false;
-    clock_ptr_ = node->get_clock();
-    timer_ = node->create_wall_timer(poll_duration, std::bind(&MessageSynchronizer::poll, this));
-  }
+  : SynchronizerBase(node, poll_duration, allow_delay),
+    sub0_(topic_names[0], node, options),
+    sub1_(topic_names[1], node, options) {}
   void registerCallback(
     std::function<void(
       const boost::optional<const std::shared_ptr<T0>> &,
@@ -95,7 +113,7 @@ public:
     callback_ = callback;
     callback_registered_ = true;
   }
-  void poll()
+  void poll() override
   {
     if (callback_registered_) {
       rclcpp::Time stamp = clock_ptr_->now();
@@ -104,14 +122,11 @@ public:
   }
 
 private:
-  std::shared_ptr<rclcpp::Clock> clock_ptr_;
   StampedMessageSubscriber<T0> sub0_;
   StampedMessageSubscriber<T1> sub1_;
   std::function<void(
       const boost::optional<const std::shared_ptr<T0>> &,
       const boost::optional<const std::shared_ptr<T1>> &)> callback_;
-  rclcpp::TimerBase::SharedPtr timer_;
-  bool callback_registered_;
 };
 }  // namespace message_synchronizer
 
