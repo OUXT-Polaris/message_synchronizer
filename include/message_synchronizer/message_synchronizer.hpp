@@ -44,6 +44,20 @@ public:
       std::move(callback),
       options);
   }
+  boost::optional<const std::shared_ptr<T>> query(rclcpp::Time stamp)
+  {
+    std::vector<double> diff;
+    for (const auto buf :  buffer_) {
+      const auto msg_stamp = buf.header.stamp;
+      diff.emplace_back(std::fabs((stamp - msg_stamp).seconds()));
+    }
+    if (diff.size() == 0) {
+      return boost::none;
+    }
+    std::vector<double>::iterator iter = std::min_element(diff.begin(), diff.end());
+    size_t index = std::distance(diff.begin(), iter);
+    return std::make_shared<T>(buffer_[index]);
+  }
 
 private:
   double buffer_duration_;
@@ -52,20 +66,6 @@ private:
   void callback(const std::shared_ptr<T> msg)
   {
     buffer_.push_back(*msg);
-  }
-  boost::optional<const std::shared_ptr<T>> query(rclcpp::Time stamp)
-  {
-    std::vector<double> diff;
-    for (const auto buf :  buffer_) {
-      const auto msg_stamp = buf.header.stamp;
-      diff.emplace_back(std::fabs(stamp - msg_stamp));
-    }
-    if (diff.size() == 0) {
-      return boost::none;
-    }
-    std::vector<double>::iterator iter = std::min_element(diff.begin(), diff.end());
-    size_t index = std::distance(diff.begin(), iter);
-    return buffer_[index];
   }
 };
 
@@ -81,7 +81,10 @@ public:
   : sub0_(topic_names[0], node, options),
     sub1_(topic_names[1], node, options)
   {
+    callback_registered_ = false;
     clock_ptr_ = node->get_clock();
+    using namespace std::chrono_literals;
+    timer_ = node->create_wall_timer(100ms, std::bind(&MessageSynchronizer::poll, this));
   }
   void registerCallback(
     std::function<void(
@@ -90,18 +93,23 @@ public:
   {
     callback_ = callback;
   }
+  void poll()
+  {
+    if (callback_registered_) {
+      rclcpp::Time stamp = clock_ptr_->now();
+      callback_(sub0_.query(stamp), sub1_.query(stamp));
+    }
+  }
 
 private:
-  void query(rclcpp::Time stamp)
-  {
-    callback_(sub0_.query(stamp), sub1_.query(stamp));
-  }
   std::shared_ptr<rclcpp::Clock> clock_ptr_;
   StampedMessageSubscriber<T0> sub0_;
   StampedMessageSubscriber<T1> sub1_;
   std::function<void(
       const boost::optional<const std::shared_ptr<T0>> &,
       const boost::optional<const std::shared_ptr<T1>> &)> callback_;
+  rclcpp::TimerBase::SharedPtr timer_;
+  bool callback_registered_;
 };
 }  // namespace message_synchronizer
 
