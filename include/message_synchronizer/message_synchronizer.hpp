@@ -33,8 +33,13 @@ public:
   template<class NodeT, class AllocatorT = std::allocator<void>>
   StampedMessageSubscriber(
     const std::string & topic_name, NodeT && node,
+    std::chrono::milliseconds poll_duration,
+    std::chrono::milliseconds allow_delay,
     const rclcpp::SubscriptionOptionsWithAllocator<AllocatorT> & options =
     rclcpp::SubscriptionOptionsWithAllocator<AllocatorT>())
+  : topic_name(topic_name),
+    poll_duration(poll_duration),
+    allow_delay(allow_delay)
   {
     auto callback = std::bind(&StampedMessageSubscriber::callback, this, std::placeholders::_1);
     buffer_ = boost::circular_buffer<T>(10);
@@ -47,17 +52,27 @@ public:
   boost::optional<const std::shared_ptr<T>> query(rclcpp::Time stamp)
   {
     std::vector<double> diff;
+    std::vector<T> messages;
     for (const auto buf :  buffer_) {
       const auto msg_stamp = buf.header.stamp;
-      diff.emplace_back(std::fabs((stamp - msg_stamp).seconds()));
+      double poll_start_diff = std::chrono::duration<double>(poll_duration).count() * -1;
+      double poll_end_diff = std::chrono::duration<double>(allow_delay).count();
+      double diff_seconds = (stamp - msg_stamp).seconds() * -1;
+      if (diff_seconds >= poll_start_diff && poll_end_diff >= diff_seconds) {
+        diff.emplace_back(std::fabs(diff_seconds));
+        messages.emplace_back(buf);
+      }
     }
     if (diff.size() == 0) {
       return boost::none;
     }
     std::vector<double>::iterator iter = std::min_element(diff.begin(), diff.end());
     size_t index = std::distance(diff.begin(), iter);
-    return std::make_shared<T>(buffer_[index]);
+    return std::make_shared<T>(messages[index]);
   }
+  const std::string topic_name;
+  const std::chrono::milliseconds poll_duration;
+  const std::chrono::milliseconds allow_delay;
 
 private:
   double buffer_duration_;
@@ -78,7 +93,7 @@ public:
     NodeT && node,
     std::chrono::milliseconds poll_duration,
     std::chrono::milliseconds allow_delay)
-  : poll_duration(poll_duration), 
+  : poll_duration(poll_duration),
     allow_delay(allow_delay)
   {
     callback_registered_ = false;
@@ -86,8 +101,8 @@ public:
     timer_ = node->create_wall_timer(poll_duration, std::bind(&SynchronizerBase::poll, this));
   }
   virtual void poll() = 0;
-  const std::chrono::milliseconds allow_delay;
   const std::chrono::milliseconds poll_duration;
+  const std::chrono::milliseconds allow_delay;
 
 protected:
   rclcpp::TimerBase::SharedPtr timer_;
@@ -107,8 +122,8 @@ public:
     const rclcpp::SubscriptionOptionsWithAllocator<AllocatorT> & options =
     rclcpp::SubscriptionOptionsWithAllocator<AllocatorT>())
   : SynchronizerBase(node, poll_duration, allow_delay),
-    sub0_(topic_names[0], node, options),
-    sub1_(topic_names[1], node, options) {}
+    sub0_(topic_names[0], node, poll_duration, allow_delay, options),
+    sub1_(topic_names[1], node, poll_duration, allow_delay, options) {}
   void registerCallback(
     std::function<void(
       const boost::optional<const std::shared_ptr<T0>> &,
