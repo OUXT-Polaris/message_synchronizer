@@ -23,6 +23,11 @@
 #include <unordered_map>
 #include <exception>
 #include <functional>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+#include <algorithm>
 
 namespace message_synchronizer
 {
