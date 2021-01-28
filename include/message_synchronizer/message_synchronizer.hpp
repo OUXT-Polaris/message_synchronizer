@@ -64,7 +64,7 @@ public:
       double poll_end_diff = std::chrono::duration<double>(allow_delay).count();
       double diff_seconds = (stamp - msg_stamp).seconds() * -1;
       if (diff_seconds >= poll_start_diff && poll_end_diff >= diff_seconds) {
-        diff.emplace_back(std::fabs(diff_seconds));
+        diff.emplace_back(std::abs(diff_seconds));
         messages.emplace_back(buf);
       }
     }
