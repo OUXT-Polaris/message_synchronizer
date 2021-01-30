@@ -145,7 +145,7 @@ public:
     callback_ = callback;
     callback_registered_ = true;
   }
-  void poll() 
+  void poll()
   {
     SynchronizerBase::poll();
     if (callback_registered_) {
@@ -233,7 +233,7 @@ public:
     callback_ = callback;
     callback_registered_ = true;
   }
-  void poll() 
+  void poll()
   {
     SynchronizerBase::poll();
     if (callback_registered_) {
