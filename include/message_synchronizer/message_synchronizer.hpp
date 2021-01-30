@@ -105,10 +105,7 @@ public:
     clock_ptr_ = node->get_clock();
     timer_ = node->create_wall_timer(poll_duration, std::bind(&SynchronizerBase::poll, this));
   }
-  void poll()
-  {
-    poll_timestamp_ = clock_ptr_->now();
-  }
+  virtual void poll() = 0;
   const rclcpp::Time getPollTimestamp()
   {
     return poll_timestamp_;
@@ -147,11 +144,11 @@ public:
   }
   void poll()
   {
-    SynchronizerBase::poll();
+    poll_timestamp_ = clock_ptr_->now();
     if (callback_registered_) {
-      rclcpp::Time stamp = clock_ptr_->now();
-      stamp = stamp - allow_delay;
-      callback_(sub0_.query(stamp), sub1_.query(stamp));
+      callback_(
+        sub0_.query(poll_timestamp_ - allow_delay),
+        sub1_.query(poll_timestamp_ - allow_delay));
     }
   }
 
@@ -189,11 +186,12 @@ public:
   }
   void poll()
   {
-    SynchronizerBase::poll();
+    poll_timestamp_ = clock_ptr_->now();
     if (callback_registered_) {
-      rclcpp::Time stamp = clock_ptr_->now();
-      stamp = stamp - allow_delay;
-      callback_(sub0_.query(stamp), sub1_.query(stamp), sub2_.query(stamp));
+      callback_(
+        sub0_.query(poll_timestamp_ - allow_delay),
+        sub1_.query(poll_timestamp_ - allow_delay),
+        sub2_.query(poll_timestamp_ - allow_delay));
     }
   }
 
@@ -235,11 +233,13 @@ public:
   }
   void poll()
   {
-    SynchronizerBase::poll();
+    poll_timestamp_ = clock_ptr_->now();
     if (callback_registered_) {
-      rclcpp::Time stamp = clock_ptr_->now();
-      stamp = stamp - allow_delay;
-      callback_(sub0_.query(stamp), sub1_.query(stamp), sub2_.query(stamp), sub3_.query(stamp));
+      callback_(
+        sub0_.query(poll_timestamp_ - allow_delay),
+        sub1_.query(poll_timestamp_ - allow_delay),
+        sub2_.query(poll_timestamp_ - allow_delay),
+        sub3_.query(poll_timestamp_ - allow_delay));
     }
   }
 
