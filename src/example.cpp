@@ -40,7 +40,7 @@ public:
   }
 
 private:
-  message_synchronizer::MessageSynchronizer<
+  message_synchronizer::MessageSynchronizer2<
     sensor_msgs::msg::PointCloud2,
     sensor_msgs::msg::PointCloud2> sync_;
   void callback(
