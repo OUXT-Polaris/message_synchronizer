@@ -116,11 +116,11 @@ protected:
 };
 
 template<typename T0, typename T1>
-class MessageSynchronizer : public SynchronizerBase
+class MessageSynchronizer2 : public SynchronizerBase
 {
 public:
   template<class NodeT, class AllocatorT = std::allocator<void>>
-  MessageSynchronizer(
+  MessageSynchronizer2(
     NodeT && node, std::vector<std::string> topic_names,
     std::chrono::milliseconds poll_duration,
     std::chrono::milliseconds allow_delay,
@@ -153,6 +153,97 @@ private:
       const boost::optional<const std::shared_ptr<T0>> &,
       const boost::optional<const std::shared_ptr<T1>> &)> callback_;
 };
+
+template<typename T0, typename T1, typename T2>
+class MessageSynchronizer3 : public SynchronizerBase
+{
+public:
+  template<class NodeT, class AllocatorT = std::allocator<void>>
+  MessageSynchronizer3(
+    NodeT && node, std::vector<std::string> topic_names,
+    std::chrono::milliseconds poll_duration,
+    std::chrono::milliseconds allow_delay,
+    const rclcpp::SubscriptionOptionsWithAllocator<AllocatorT> & options =
+    rclcpp::SubscriptionOptionsWithAllocator<AllocatorT>())
+  : SynchronizerBase(node, poll_duration, allow_delay),
+    sub0_(topic_names[0], node, poll_duration, allow_delay, options),
+    sub1_(topic_names[1], node, poll_duration, allow_delay, options),
+    sub2_(topic_names[2], node, poll_duration, allow_delay, options) {}
+  void registerCallback(
+    std::function<void(
+      const boost::optional<const std::shared_ptr<T0>> &,
+      const boost::optional<const std::shared_ptr<T1>> &,
+      const boost::optional<const std::shared_ptr<T2>> &)> callback)
+  {
+    callback_ = callback;
+    callback_registered_ = true;
+  }
+  void poll() override
+  {
+    if (callback_registered_) {
+      rclcpp::Time stamp = clock_ptr_->now();
+      stamp = stamp - allow_delay;
+      callback_(sub0_.query(stamp), sub1_.query(stamp), sub2_.query(stamp));
+    }
+  }
+
+private:
+  StampedMessageSubscriber<T0> sub0_;
+  StampedMessageSubscriber<T1> sub1_;
+  StampedMessageSubscriber<T2> sub2_;
+  std::function<void(
+      const boost::optional<const std::shared_ptr<T0>> &,
+      const boost::optional<const std::shared_ptr<T1>> &,
+      const boost::optional<const std::shared_ptr<T2>> &)> callback_;
+};
+
+template<typename T0, typename T1, typename T2, typename T3>
+class MessageSynchronizer4 : public SynchronizerBase
+{
+public:
+  template<class NodeT, class AllocatorT = std::allocator<void>>
+  MessageSynchronizer4(
+    NodeT && node, std::vector<std::string> topic_names,
+    std::chrono::milliseconds poll_duration,
+    std::chrono::milliseconds allow_delay,
+    const rclcpp::SubscriptionOptionsWithAllocator<AllocatorT> & options =
+    rclcpp::SubscriptionOptionsWithAllocator<AllocatorT>())
+  : SynchronizerBase(node, poll_duration, allow_delay),
+    sub0_(topic_names[0], node, poll_duration, allow_delay, options),
+    sub1_(topic_names[1], node, poll_duration, allow_delay, options),
+    sub2_(topic_names[2], node, poll_duration, allow_delay, options),
+    sub3_(topic_names[3], node, poll_duration, allow_delay, options) {}
+  void registerCallback(
+    std::function<void(
+      const boost::optional<const std::shared_ptr<T0>> &,
+      const boost::optional<const std::shared_ptr<T1>> &,
+      const boost::optional<const std::shared_ptr<T2>> &,
+      const boost::optional<const std::shared_ptr<T3>> &)> callback)
+  {
+    callback_ = callback;
+    callback_registered_ = true;
+  }
+  void poll() override
+  {
+    if (callback_registered_) {
+      rclcpp::Time stamp = clock_ptr_->now();
+      stamp = stamp - allow_delay;
+      callback_(sub0_.query(stamp), sub1_.query(stamp), sub2_.query(stamp), sub3_.query(stamp));
+    }
+  }
+
+private:
+  StampedMessageSubscriber<T0> sub0_;
+  StampedMessageSubscriber<T1> sub1_;
+  StampedMessageSubscriber<T2> sub2_;
+  StampedMessageSubscriber<T3> sub3_;
+  std::function<void(
+      const boost::optional<const std::shared_ptr<T0>> &,
+      const boost::optional<const std::shared_ptr<T1>> &,
+      const boost::optional<const std::shared_ptr<T2>> &,
+      const boost::optional<const std::shared_ptr<T3>> &)> callback_;
+};
+
 }  // namespace message_synchronizer
 
 #endif  // MESSAGE_SYNCHRONIZER__MESSAGE_SYNCHRONIZER_HPP_
