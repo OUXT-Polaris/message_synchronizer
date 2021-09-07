@@ -12,41 +12,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <rclcpp/rclcpp.hpp>
-
-#include <message_synchronizer/message_synchronizer.hpp>
-
-#include <sensor_msgs/msg/point_cloud2.hpp>
-
-#include <memory>
-#include <string>
 #include <chrono>
+#include <memory>
+#include <message_synchronizer/message_synchronizer.hpp>
+#include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/point_cloud2.hpp>
+#include <string>
 
 class Example : public rclcpp::Node
 {
 public:
   explicit Example(const rclcpp::NodeOptions & option)
   : Node("example", option),
-    sync_(this,
+    sync_(
+      this,
       {"/perception/front_lidar/points_transform_node/output",
-        "/perception/rear_lidar/points_transform_node/output"},
-      std::chrono::milliseconds{100},
-      std::chrono::milliseconds{30})
+       "/perception/rear_lidar/points_transform_node/output"},
+      std::chrono::milliseconds{100}, std::chrono::milliseconds{30})
   {
-    const auto func = std::bind(
-      &Example::callback, this, std::placeholders::_1,
-      std::placeholders::_2);
+    const auto func =
+      std::bind(&Example::callback, this, std::placeholders::_1, std::placeholders::_2);
     sync_.registerCallback(func);
   }
 
 private:
   message_synchronizer::MessageSynchronizer2<
-    sensor_msgs::msg::PointCloud2,
-    sensor_msgs::msg::PointCloud2> sync_;
+    sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2>
+    sync_;
   void callback(
     const boost::optional<const std::shared_ptr<sensor_msgs::msg::PointCloud2>> & msg0,
-    const boost::optional<const std::shared_ptr<sensor_msgs::msg::PointCloud2>> & msg1
-  )
+    const boost::optional<const std::shared_ptr<sensor_msgs::msg::PointCloud2>> & msg1)
   {
     if (msg0) {
       std::cout << __FILE__ << "," << __LINE__ << std::endl;
