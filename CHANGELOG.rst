@@ -2,8 +2,8 @@
 Changelog for package message_synchronizer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.0.1 (2021-12-29)
+------------------
 * Setup workflow (`#28 <https://github.com/OUXT-Polaris/message_synchronizer/issues/28>`_)
 * Setup workflow (`#27 <https://github.com/OUXT-Polaris/message_synchronizer/issues/27>`_)
 * Setup workflow (`#26 <https://github.com/OUXT-Polaris/message_synchronizer/issues/26>`_)
