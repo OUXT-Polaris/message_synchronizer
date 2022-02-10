@@ -2,8 +2,8 @@
 Changelog for package message_synchronizer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.0.2 (2022-02-11)
+------------------
 * Setup workflow (`#30 <https://github.com/OUXT-Polaris/message_synchronizer/issues/30>`_)
   Co-authored-by: MasayaKataoka <ms.kataoka@gmail.com>
 * add boost to the depends
