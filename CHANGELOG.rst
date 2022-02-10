@@ -2,6 +2,14 @@
 Changelog for package message_synchronizer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Setup workflow (`#30 <https://github.com/OUXT-Polaris/message_synchronizer/issues/30>`_)
+  Co-authored-by: MasayaKataoka <ms.kataoka@gmail.com>
+* add boost to the depends
+* Setup workflow (`#29 <https://github.com/OUXT-Polaris/message_synchronizer/issues/29>`_)
+* Contributors: MasayaKataoka, wam-v-tan
+
 0.0.1 (2021-12-29)
 ------------------
 * Setup workflow (`#28 <https://github.com/OUXT-Polaris/message_synchronizer/issues/28>`_)
