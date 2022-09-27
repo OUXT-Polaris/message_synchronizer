@@ -38,13 +38,14 @@ public:
     const std::string & topic_name, NodeT && node, std::chrono::milliseconds poll_duration,
     std::chrono::milliseconds allow_delay,
     const rclcpp::SubscriptionOptionsWithAllocator<AllocatorT> & options =
-      rclcpp::SubscriptionOptionsWithAllocator<AllocatorT>())
+      rclcpp::SubscriptionOptionsWithAllocator<AllocatorT>(),
+    size_t buffer_size = 10)
   : topic_name(topic_name), poll_duration(poll_duration), allow_delay(allow_delay)
   {
     auto callback = std::bind(&StampedMessageSubscriber::callback, this, std::placeholders::_1);
-    buffer_ = boost::circular_buffer<std::shared_ptr<T>>(10);
+    buffer_ = boost::circular_buffer<std::shared_ptr<T>>(buffer_size);
     sub_ = rclcpp::create_subscription<T>(
-      node, topic_name, rclcpp::QoS(10), std::move(callback), options);
+      node, topic_name, rclcpp::QoS(buffer_size), std::move(callback), options);
   }
   boost::optional<const std::shared_ptr<T>> query(const rclcpp::Time & stamp)
   {
