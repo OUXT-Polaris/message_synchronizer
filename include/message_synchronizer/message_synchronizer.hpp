@@ -46,7 +46,7 @@ public:
     sub_ = rclcpp::create_subscription<T>(
       node, topic_name, rclcpp::QoS(10), std::move(callback), options);
   }
-  boost::optional<const std::shared_ptr<T>> query(rclcpp::Time stamp)
+  boost::optional<const std::shared_ptr<T>> query(const rclcpp::Time & stamp)
   {
     std::vector<double> diff;
     std::vector<T> messages;
