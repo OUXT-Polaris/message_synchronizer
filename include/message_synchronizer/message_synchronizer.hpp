@@ -49,13 +49,13 @@ public:
   }
   boost::optional<const std::shared_ptr<T>> query(const rclcpp::Time & stamp)
   {
+    RCLCPP_ERROR_STREAM(rclcpp::get_logger(topic_name), buffer_.size());
     std::vector<double> diff;
     std::vector<std::shared_ptr<T>> messages;
+    double poll_start_diff = std::chrono::duration<double>(poll_duration).count() * -1;
+    double poll_end_diff = std::chrono::duration<double>(allow_delay).count();
     for (const auto buf : buffer_) {
-      const auto msg_stamp = buf->header.stamp;
-      double poll_start_diff = std::chrono::duration<double>(poll_duration).count() * -1;
-      double poll_end_diff = std::chrono::duration<double>(allow_delay).count();
-      double diff_seconds = (stamp - msg_stamp).seconds() * -1;
+      double diff_seconds = (stamp - buf->header.stamp).seconds() * -1;
       if (diff_seconds >= poll_start_diff && poll_end_diff >= diff_seconds) {
         diff.emplace_back(std::abs(diff_seconds));
         messages.emplace_back(buf);
