@@ -38,23 +38,24 @@ public:
     const std::string & topic_name, NodeT && node, std::chrono::milliseconds poll_duration,
     std::chrono::milliseconds allow_delay,
     const rclcpp::SubscriptionOptionsWithAllocator<AllocatorT> & options =
-      rclcpp::SubscriptionOptionsWithAllocator<AllocatorT>())
+      rclcpp::SubscriptionOptionsWithAllocator<AllocatorT>(),
+    size_t buffer_size = 10)
   : topic_name(topic_name), poll_duration(poll_duration), allow_delay(allow_delay)
   {
     auto callback = std::bind(&StampedMessageSubscriber::callback, this, std::placeholders::_1);
-    buffer_ = boost::circular_buffer<T>(10);
+    buffer_ = boost::circular_buffer<std::shared_ptr<T>>(buffer_size);
     sub_ = rclcpp::create_subscription<T>(
-      node, topic_name, rclcpp::QoS(10), std::move(callback), options);
+      node, topic_name, rclcpp::QoS(buffer_size), std::move(callback), options);
   }
-  boost::optional<const std::shared_ptr<T>> query(rclcpp::Time stamp)
+  boost::optional<const std::shared_ptr<T>> query(const rclcpp::Time & stamp)
   {
+    RCLCPP_ERROR_STREAM(rclcpp::get_logger(topic_name), buffer_.size());
     std::vector<double> diff;
-    std::vector<T> messages;
+    std::vector<std::shared_ptr<T>> messages;
+    double poll_start_diff = std::chrono::duration<double>(poll_duration).count() * -1;
+    double poll_end_diff = std::chrono::duration<double>(allow_delay).count();
     for (const auto buf : buffer_) {
-      const auto msg_stamp = buf.header.stamp;
-      double poll_start_diff = std::chrono::duration<double>(poll_duration).count() * -1;
-      double poll_end_diff = std::chrono::duration<double>(allow_delay).count();
-      double diff_seconds = (stamp - msg_stamp).seconds() * -1;
+      double diff_seconds = (stamp - buf->header.stamp).seconds() * -1;
       if (diff_seconds >= poll_start_diff && poll_end_diff >= diff_seconds) {
         diff.emplace_back(std::abs(diff_seconds));
         messages.emplace_back(buf);
@@ -65,7 +66,7 @@ public:
     }
     std::vector<double>::iterator iter = std::min_element(diff.begin(), diff.end());
     size_t index = std::distance(diff.begin(), iter);
-    return std::make_shared<T>(messages[index]);
+    return messages[index];
   }
   const std::string topic_name;
   const std::chrono::milliseconds poll_duration;
@@ -73,9 +74,9 @@ public:
 
 private:
   double buffer_duration_;
-  boost::circular_buffer<T> buffer_;
+  boost::circular_buffer<std::shared_ptr<T>> buffer_;
   std::shared_ptr<rclcpp::Subscription<T>> sub_;
-  void callback(const std::shared_ptr<T> msg) { buffer_.push_back(*msg); }
+  void callback(const std::shared_ptr<T> msg) { buffer_.push_back(msg); }
 };
 
 class SynchronizerBase
