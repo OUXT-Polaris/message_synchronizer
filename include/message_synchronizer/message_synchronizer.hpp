@@ -49,7 +49,6 @@ public:
   }
   boost::optional<const std::shared_ptr<T>> query(const rclcpp::Time & stamp)
   {
-    RCLCPP_ERROR_STREAM(rclcpp::get_logger(topic_name), buffer_.size());
     std::vector<double> diff;
     std::vector<std::shared_ptr<T>> messages;
     double poll_start_diff = std::chrono::duration<double>(poll_duration).count() * -1;
