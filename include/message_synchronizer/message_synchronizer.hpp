@@ -53,7 +53,7 @@ public:
     std::vector<std::shared_ptr<T>> messages;
     double poll_start_diff = std::chrono::duration<double>(poll_duration).count() * -1;
     double poll_end_diff = std::chrono::duration<double>(allow_delay).count();
-    for (const auto buf : buffer_) {
+    for (const auto & buf : buffer_) {
       double diff_seconds = (stamp - buf->header.stamp).seconds() * -1;
       if (diff_seconds >= poll_start_diff && poll_end_diff >= diff_seconds) {
         diff.emplace_back(std::abs(diff_seconds));
