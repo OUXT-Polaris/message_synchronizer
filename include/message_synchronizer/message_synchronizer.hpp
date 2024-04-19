@@ -29,7 +29,7 @@
 
 namespace message_synchronizer
 {
-template <typename T>
+template <typename AdapterType, typename DataType = AdapterType>
 class StampedMessageSubscriber
 {
 public:
@@ -40,7 +40,7 @@ public:
     const rclcpp::SubscriptionOptionsWithAllocator<AllocatorT> & options =
       rclcpp::SubscriptionOptionsWithAllocator<AllocatorT>(),
     size_t buffer_size = 10,
-    const std::function<rclcpp::Time(const std::shared_ptr<T>)> & get_timestamp_function =
+    const std::function<rclcpp::Time(const std::shared_ptr<DataType>)> & get_timestamp_function =
       [](const auto & data) { return data->header.stamp; })
   : topic_name(topic_name),
     poll_duration(poll_duration),
@@ -48,14 +48,14 @@ public:
     get_timestamp_function_(get_timestamp_function)
   {
     auto callback = std::bind(&StampedMessageSubscriber::callback, this, std::placeholders::_1);
-    buffer_ = boost::circular_buffer<std::shared_ptr<T>>(buffer_size);
-    sub_ = rclcpp::create_subscription<T>(
+    buffer_ = boost::circular_buffer<std::shared_ptr<DataType>>(buffer_size);
+    sub_ = rclcpp::create_subscription<AdapterType>(
       node, topic_name, rclcpp::QoS(buffer_size), std::move(callback), options);
   }
-  boost::optional<const std::shared_ptr<T>> query(const rclcpp::Time & stamp)
+  boost::optional<const std::shared_ptr<DataType>> query(const rclcpp::Time & stamp)
   {
     std::vector<double> diff;
-    std::vector<std::shared_ptr<T>> messages;
+    std::vector<std::shared_ptr<DataType>> messages;
     double poll_start_diff = std::chrono::duration<double>(poll_duration).count() * -1;
     double poll_end_diff = std::chrono::duration<double>(allow_delay).count();
     for (const auto & data : buffer_) {
@@ -78,10 +78,10 @@ public:
 
 private:
   double buffer_duration_;
-  boost::circular_buffer<std::shared_ptr<T>> buffer_;
-  std::shared_ptr<rclcpp::Subscription<T>> sub_;
-  void callback(const std::shared_ptr<T> msg) { buffer_.push_back(msg); }
-  const std::function<rclcpp::Time(const std::shared_ptr<T>)> get_timestamp_function_;
+  boost::circular_buffer<std::shared_ptr<DataType>> buffer_;
+  std::shared_ptr<rclcpp::Subscription<AdapterType>> sub_;
+  void callback(const std::shared_ptr<DataType> msg) { buffer_.push_back(msg); }
+  const std::function<rclcpp::Time(const std::shared_ptr<DataType>)> get_timestamp_function_;
 };
 
 class SynchronizerBase
