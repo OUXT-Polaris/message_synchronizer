@@ -40,7 +40,7 @@ public:
     const rclcpp::SubscriptionOptionsWithAllocator<AllocatorT> & options =
       rclcpp::SubscriptionOptionsWithAllocator<AllocatorT>(),
     size_t buffer_size = 10,
-    const std::function<rclcpp::Time(const std::shared_ptr<T>)> get_timestamp_function =
+    const std::function<rclcpp::Time(const std::shared_ptr<T>)> & get_timestamp_function =
       [](const auto & data) { return data->header.stamp; })
   : topic_name(topic_name),
     poll_duration(poll_duration),
@@ -118,10 +118,16 @@ public:
     NodeT && node, const std::vector<std::string> & topic_names,
     const std::chrono::milliseconds & poll_duration, const std::chrono::milliseconds & allow_delay,
     const rclcpp::SubscriptionOptionsWithAllocator<AllocatorT> & options =
-      rclcpp::SubscriptionOptionsWithAllocator<AllocatorT>())
+      rclcpp::SubscriptionOptionsWithAllocator<AllocatorT>(),
+    const std::function<rclcpp::Time(const std::shared_ptr<T0>)> & get_timestamp_function_topic0 =
+      [](const auto & data) { return data->header.stamp; },
+    const std::function<rclcpp::Time(const std::shared_ptr<T1>)> & get_timestamp_function_topic1 =
+      [](const auto & data) { return data->header.stamp; })
   : SynchronizerBase(node, poll_duration, allow_delay),
-    sub0_(topic_names[0], node, poll_duration, allow_delay, options),
-    sub1_(topic_names[1], node, poll_duration, allow_delay, options)
+    sub0_(
+      topic_names[0], node, poll_duration, allow_delay, options, 10, get_timestamp_function_topic0),
+    sub1_(
+      topic_names[1], node, poll_duration, allow_delay, options, 10, get_timestamp_function_topic1)
   {
   }
   void registerCallback(std::function<void(
@@ -159,11 +165,20 @@ public:
     NodeT && node, const std::vector<std::string> & topic_names,
     const std::chrono::milliseconds & poll_duration, const std::chrono::milliseconds & allow_delay,
     const rclcpp::SubscriptionOptionsWithAllocator<AllocatorT> & options =
-      rclcpp::SubscriptionOptionsWithAllocator<AllocatorT>())
+      rclcpp::SubscriptionOptionsWithAllocator<AllocatorT>(),
+    const std::function<rclcpp::Time(const std::shared_ptr<T0>)> & get_timestamp_function_topic0 =
+      [](const auto & data) { return data->header.stamp; },
+    const std::function<rclcpp::Time(const std::shared_ptr<T1>)> & get_timestamp_function_topic1 =
+      [](const auto & data) { return data->header.stamp; },
+    const std::function<rclcpp::Time(const std::shared_ptr<T2>)> & get_timestamp_function_topic2 =
+      [](const auto & data) { return data->header.stamp; })
   : SynchronizerBase(node, poll_duration, allow_delay),
-    sub0_(topic_names[0], node, poll_duration, allow_delay, options),
-    sub1_(topic_names[1], node, poll_duration, allow_delay, options),
-    sub2_(topic_names[2], node, poll_duration, allow_delay, options)
+    sub0_(
+      topic_names[0], node, poll_duration, allow_delay, options, 10, get_timestamp_function_topic0),
+    sub1_(
+      topic_names[1], node, poll_duration, allow_delay, options, 10, get_timestamp_function_topic1),
+    sub2_(
+      topic_names[2], node, poll_duration, allow_delay, options, 10, get_timestamp_function_topic2)
   {
   }
   void registerCallback(std::function<void(
@@ -205,12 +220,24 @@ public:
     NodeT && node, const std::vector<std::string> & topic_names,
     const std::chrono::milliseconds & poll_duration, const std::chrono::milliseconds & allow_delay,
     const rclcpp::SubscriptionOptionsWithAllocator<AllocatorT> & options =
-      rclcpp::SubscriptionOptionsWithAllocator<AllocatorT>())
+      rclcpp::SubscriptionOptionsWithAllocator<AllocatorT>(),
+    const std::function<rclcpp::Time(const std::shared_ptr<T0>)> & get_timestamp_function_topic0 =
+      [](const auto & data) { return data->header.stamp; },
+    const std::function<rclcpp::Time(const std::shared_ptr<T1>)> & get_timestamp_function_topic1 =
+      [](const auto & data) { return data->header.stamp; },
+    const std::function<rclcpp::Time(const std::shared_ptr<T2>)> & get_timestamp_function_topic2 =
+      [](const auto & data) { return data->header.stamp; },
+    const std::function<rclcpp::Time(const std::shared_ptr<T3>)> & get_timestamp_function_topic3 =
+      [](const auto & data) { return data->header.stamp; })
   : SynchronizerBase(node, poll_duration, allow_delay),
-    sub0_(topic_names[0], node, poll_duration, allow_delay, options),
-    sub1_(topic_names[1], node, poll_duration, allow_delay, options),
-    sub2_(topic_names[2], node, poll_duration, allow_delay, options),
-    sub3_(topic_names[3], node, poll_duration, allow_delay, options)
+    sub0_(
+      topic_names[0], node, poll_duration, allow_delay, options, 10, get_timestamp_function_topic0),
+    sub1_(
+      topic_names[1], node, poll_duration, allow_delay, options, 10, get_timestamp_function_topic1),
+    sub2_(
+      topic_names[2], node, poll_duration, allow_delay, options, 10, get_timestamp_function_topic2),
+    sub3_(
+      topic_names[3], node, poll_duration, allow_delay, options, 10, get_timestamp_function_topic3)
   {
   }
   void registerCallback(std::function<void(
