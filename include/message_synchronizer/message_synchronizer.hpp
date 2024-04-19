@@ -251,7 +251,7 @@ public:
     sub3_(
       topic_names[3], node, poll_duration, allow_delay, options, 10, get_timestamp_function_topic3)
   {
-    // timer_ = node->create_wall_timer(poll_duration, std::bind(&MessageSynchronizer4::poll, this));
+    timer_ = node->create_wall_timer(poll_duration, std::bind(&MessageSynchronizer4::poll, this));
   }
   void registerCallback(std::function<void(
                           const std::optional<DataType0> &, const std::optional<DataType1> &,
