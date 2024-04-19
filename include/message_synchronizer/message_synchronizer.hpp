@@ -35,12 +35,17 @@ class StampedMessageSubscriber
 public:
   template <class NodeT, class AllocatorT = std::allocator<void>>
   StampedMessageSubscriber(
-    const std::string & topic_name, NodeT && node, std::chrono::milliseconds poll_duration,
-    std::chrono::milliseconds allow_delay,
+    const std::string & topic_name, NodeT && node, const std::chrono::milliseconds & poll_duration,
+    const std::chrono::milliseconds & allow_delay,
     const rclcpp::SubscriptionOptionsWithAllocator<AllocatorT> & options =
       rclcpp::SubscriptionOptionsWithAllocator<AllocatorT>(),
-    size_t buffer_size = 10)
-  : topic_name(topic_name), poll_duration(poll_duration), allow_delay(allow_delay)
+    size_t buffer_size = 10,
+    const std::function<rclcpp::Time(const std::shared_ptr<T>)> get_timestamp_function =
+      [](const auto & data) { return data->header.stamp; })
+  : topic_name(topic_name),
+    poll_duration(poll_duration),
+    allow_delay(allow_delay),
+    get_timestamp_function_(get_timestamp_function)
   {
     auto callback = std::bind(&StampedMessageSubscriber::callback, this, std::placeholders::_1);
     buffer_ = boost::circular_buffer<std::shared_ptr<T>>(buffer_size);
@@ -53,11 +58,11 @@ public:
     std::vector<std::shared_ptr<T>> messages;
     double poll_start_diff = std::chrono::duration<double>(poll_duration).count() * -1;
     double poll_end_diff = std::chrono::duration<double>(allow_delay).count();
-    for (const auto & buf : buffer_) {
-      double diff_seconds = (stamp - buf->header.stamp).seconds() * -1;
+    for (const auto & data : buffer_) {
+      double diff_seconds = (stamp - get_timestamp_function_(data)).seconds() * -1;
       if (diff_seconds >= poll_start_diff && poll_end_diff >= diff_seconds) {
         diff.emplace_back(std::abs(diff_seconds));
-        messages.emplace_back(buf);
+        messages.emplace_back(data);
       }
     }
     if (diff.size() == 0) {
@@ -76,6 +81,7 @@ private:
   boost::circular_buffer<std::shared_ptr<T>> buffer_;
   std::shared_ptr<rclcpp::Subscription<T>> sub_;
   void callback(const std::shared_ptr<T> msg) { buffer_.push_back(msg); }
+  const std::function<rclcpp::Time(const std::shared_ptr<T>)> get_timestamp_function_;
 };
 
 class SynchronizerBase
@@ -83,7 +89,8 @@ class SynchronizerBase
 public:
   template <class NodeT, class AllocatorT = std::allocator<void>>
   SynchronizerBase(
-    NodeT && node, std::chrono::milliseconds poll_duration, std::chrono::milliseconds allow_delay)
+    NodeT && node, const std::chrono::milliseconds & poll_duration,
+    const std::chrono::milliseconds & allow_delay)
   : poll_duration(poll_duration), allow_delay(allow_delay)
   {
     callback_registered_ = false;
@@ -108,8 +115,8 @@ class MessageSynchronizer2 : public SynchronizerBase
 public:
   template <class NodeT, class AllocatorT = std::allocator<void>>
   MessageSynchronizer2(
-    NodeT && node, std::vector<std::string> topic_names, std::chrono::milliseconds poll_duration,
-    std::chrono::milliseconds allow_delay,
+    NodeT && node, const std::vector<std::string> & topic_names,
+    const std::chrono::milliseconds & poll_duration, const std::chrono::milliseconds & allow_delay,
     const rclcpp::SubscriptionOptionsWithAllocator<AllocatorT> & options =
       rclcpp::SubscriptionOptionsWithAllocator<AllocatorT>())
   : SynchronizerBase(node, poll_duration, allow_delay),
@@ -149,8 +156,8 @@ class MessageSynchronizer3 : public SynchronizerBase
 public:
   template <class NodeT, class AllocatorT = std::allocator<void>>
   MessageSynchronizer3(
-    NodeT && node, std::vector<std::string> topic_names, std::chrono::milliseconds poll_duration,
-    std::chrono::milliseconds allow_delay,
+    NodeT && node, const std::vector<std::string> & topic_names,
+    const std::chrono::milliseconds & poll_duration, const std::chrono::milliseconds & allow_delay,
     const rclcpp::SubscriptionOptionsWithAllocator<AllocatorT> & options =
       rclcpp::SubscriptionOptionsWithAllocator<AllocatorT>())
   : SynchronizerBase(node, poll_duration, allow_delay),
@@ -195,8 +202,8 @@ class MessageSynchronizer4 : public SynchronizerBase
 public:
   template <class NodeT, class AllocatorT = std::allocator<void>>
   MessageSynchronizer4(
-    NodeT && node, std::vector<std::string> topic_names, std::chrono::milliseconds poll_duration,
-    std::chrono::milliseconds allow_delay,
+    NodeT && node, const std::vector<std::string> & topic_names,
+    const std::chrono::milliseconds & poll_duration, const std::chrono::milliseconds & allow_delay,
     const rclcpp::SubscriptionOptionsWithAllocator<AllocatorT> & options =
       rclcpp::SubscriptionOptionsWithAllocator<AllocatorT>())
   : SynchronizerBase(node, poll_duration, allow_delay),
