@@ -16,8 +16,7 @@
 #define MESSAGE_SYNCHRONIZER__MESSAGE_SYNCHRONIZER_HPP_
 
 #include <algorithm>
-#include <boost/circular_buffer.hpp>
-#include <boost/optional.hpp>
+#include <deque>
 #include <exception>
 #include <functional>
 #include <memory>
@@ -40,22 +39,22 @@ public:
     const rclcpp::SubscriptionOptionsWithAllocator<AllocatorT> & options =
       rclcpp::SubscriptionOptionsWithAllocator<AllocatorT>(),
     size_t buffer_size = 10,
-    const std::function<rclcpp::Time(const std::shared_ptr<DataType>)> & get_timestamp_function =
-      [](const auto & data) { return data->header.stamp; })
+    const std::function<rclcpp::Time(const DataType)> & get_timestamp_function =
+      [](const auto & data) { return data.header.stamp; })
   : topic_name(topic_name),
     poll_duration(poll_duration),
     allow_delay(allow_delay),
-    get_timestamp_function_(get_timestamp_function)
+    get_timestamp_function_(get_timestamp_function),
+    buffer_size_(buffer_size)
   {
-    auto callback = std::bind(&StampedMessageSubscriber::callback, this, std::placeholders::_1);
-    buffer_ = boost::circular_buffer<std::shared_ptr<DataType>>(buffer_size);
     sub_ = rclcpp::create_subscription<AdapterType>(
-      node, topic_name, rclcpp::QoS(buffer_size), std::move(callback), options);
+      node, topic_name, rclcpp::QoS(buffer_size),
+      std::bind(&StampedMessageSubscriber::callback, this, std::placeholders::_1), options);
   }
-  boost::optional<const std::shared_ptr<DataType>> query(const rclcpp::Time & stamp)
+  std::optional<const DataType> query(const rclcpp::Time & stamp)
   {
     std::vector<double> diff;
-    std::vector<std::shared_ptr<DataType>> messages;
+    std::vector<DataType> messages;
     double poll_start_diff = std::chrono::duration<double>(poll_duration).count() * -1;
     double poll_end_diff = std::chrono::duration<double>(allow_delay).count();
     for (const auto & data : buffer_) {
@@ -66,7 +65,7 @@ public:
       }
     }
     if (diff.size() == 0) {
-      return boost::none;
+      return std::nullopt;
     }
     std::vector<double>::iterator iter = std::min_element(diff.begin(), diff.end());
     size_t index = std::distance(diff.begin(), iter);
@@ -78,10 +77,18 @@ public:
 
 private:
   double buffer_duration_;
-  boost::circular_buffer<std::shared_ptr<DataType>> buffer_;
+  std::deque<DataType> buffer_;
   std::shared_ptr<rclcpp::Subscription<AdapterType>> sub_;
-  void callback(const std::shared_ptr<DataType> msg) { buffer_.push_back(msg); }
-  const std::function<rclcpp::Time(const std::shared_ptr<DataType>)> get_timestamp_function_;
+  void callback(const std::shared_ptr<DataType> msg)
+  {
+    DataType data = *msg;
+    buffer_.push_back(data);
+    while (buffer_.size() > buffer_size_) {
+      buffer_.pop_front();
+    }
+  }
+  const std::function<rclcpp::Time(const DataType &)> get_timestamp_function_;
+  const size_t buffer_size_;
 };
 
 class SynchronizerBase
@@ -95,7 +102,6 @@ public:
   {
     callback_registered_ = false;
     clock_ptr_ = node->get_clock();
-    timer_ = node->create_wall_timer(poll_duration, std::bind(&SynchronizerBase::poll, this));
   }
   virtual void poll() = 0;
   const rclcpp::Time getPollTimestamp() { return poll_timestamp_; }
@@ -109,7 +115,9 @@ protected:
   std::shared_ptr<rclcpp::Clock> clock_ptr_;
 };
 
-template <typename T0, typename T1>
+template <
+  typename AdapterType0, typename AdapterType1, typename DataType0 = AdapterType0,
+  typename DataType1 = AdapterType1>
 class MessageSynchronizer2 : public SynchronizerBase
 {
 public:
@@ -119,26 +127,26 @@ public:
     const std::chrono::milliseconds & poll_duration, const std::chrono::milliseconds & allow_delay,
     const rclcpp::SubscriptionOptionsWithAllocator<AllocatorT> & options =
       rclcpp::SubscriptionOptionsWithAllocator<AllocatorT>(),
-    const std::function<rclcpp::Time(const std::shared_ptr<T0>)> & get_timestamp_function_topic0 =
-      [](const auto & data) { return data->header.stamp; },
-    const std::function<rclcpp::Time(const std::shared_ptr<T1>)> & get_timestamp_function_topic1 =
-      [](const auto & data) { return data->header.stamp; })
+    const std::function<rclcpp::Time(const DataType0 &)> & get_timestamp_function_topic0 =
+      [](const auto & data) { return data.header.stamp; },
+    const std::function<rclcpp::Time(const DataType1 &)> & get_timestamp_function_topic1 =
+      [](const auto & data) { return data.header.stamp; })
   : SynchronizerBase(node, poll_duration, allow_delay),
     sub0_(
       topic_names[0], node, poll_duration, allow_delay, options, 10, get_timestamp_function_topic0),
     sub1_(
       topic_names[1], node, poll_duration, allow_delay, options, 10, get_timestamp_function_topic1)
   {
+    timer_ = node->create_wall_timer(poll_duration, std::bind(&MessageSynchronizer2::poll, this));
   }
-  void registerCallback(std::function<void(
-                          const boost::optional<const std::shared_ptr<T0>> &,
-                          const boost::optional<const std::shared_ptr<T1>> &)>
-                          callback)
+  void registerCallback(
+    std::function<void(const std::optional<DataType0> &, const std::optional<DataType1> &)>
+      callback)
   {
     callback_ = callback;
     callback_registered_ = true;
   }
-  void poll()
+  void poll() override
   {
     poll_timestamp_ = clock_ptr_->now();
     if (callback_registered_) {
@@ -148,15 +156,17 @@ public:
   }
 
 private:
-  StampedMessageSubscriber<T0> sub0_;
-  StampedMessageSubscriber<T1> sub1_;
+  StampedMessageSubscriber<AdapterType0, DataType0> sub0_;
+  StampedMessageSubscriber<AdapterType1, DataType1> sub1_;
   std::function<void(
-    const boost::optional<const std::shared_ptr<T0>> &,
-    const boost::optional<const std::shared_ptr<T1>> &)>
+    const std::optional<const DataType0> &, const std::optional<const DataType1> &)>
     callback_;
 };
 
-template <typename T0, typename T1, typename T2>
+template <
+  typename AdapterType0, typename AdapterType1, typename AdapterType2,
+  typename DataType0 = AdapterType0, typename DataType1 = AdapterType1,
+  typename DataType2 = AdapterType2>
 class MessageSynchronizer3 : public SynchronizerBase
 {
 public:
@@ -166,12 +176,12 @@ public:
     const std::chrono::milliseconds & poll_duration, const std::chrono::milliseconds & allow_delay,
     const rclcpp::SubscriptionOptionsWithAllocator<AllocatorT> & options =
       rclcpp::SubscriptionOptionsWithAllocator<AllocatorT>(),
-    const std::function<rclcpp::Time(const std::shared_ptr<T0>)> & get_timestamp_function_topic0 =
-      [](const auto & data) { return data->header.stamp; },
-    const std::function<rclcpp::Time(const std::shared_ptr<T1>)> & get_timestamp_function_topic1 =
-      [](const auto & data) { return data->header.stamp; },
-    const std::function<rclcpp::Time(const std::shared_ptr<T2>)> & get_timestamp_function_topic2 =
-      [](const auto & data) { return data->header.stamp; })
+    const std::function<rclcpp::Time(const DataType0 &)> & get_timestamp_function_topic0 =
+      [](const auto & data) { return data.header.stamp; },
+    const std::function<rclcpp::Time(const DataType1 &)> & get_timestamp_function_topic1 =
+      [](const auto & data) { return data.header.stamp; },
+    const std::function<rclcpp::Time(const DataType2 &)> & get_timestamp_function_topic2 =
+      [](const auto & data) { return data.header.stamp; })
   : SynchronizerBase(node, poll_duration, allow_delay),
     sub0_(
       topic_names[0], node, poll_duration, allow_delay, options, 10, get_timestamp_function_topic0),
@@ -180,17 +190,17 @@ public:
     sub2_(
       topic_names[2], node, poll_duration, allow_delay, options, 10, get_timestamp_function_topic2)
   {
+    timer_ = node->create_wall_timer(poll_duration, std::bind(&MessageSynchronizer3::poll, this));
   }
   void registerCallback(std::function<void(
-                          const boost::optional<const std::shared_ptr<T0>> &,
-                          const boost::optional<const std::shared_ptr<T1>> &,
-                          const boost::optional<const std::shared_ptr<T2>> &)>
+                          const std::optional<DataType0> &, const std::optional<DataType1> &,
+                          const std::optional<DataType2> &)>
                           callback)
   {
     callback_ = callback;
     callback_registered_ = true;
   }
-  void poll()
+  void poll() override
   {
     poll_timestamp_ = clock_ptr_->now();
     if (callback_registered_) {
@@ -201,17 +211,19 @@ public:
   }
 
 private:
-  StampedMessageSubscriber<T0> sub0_;
-  StampedMessageSubscriber<T1> sub1_;
-  StampedMessageSubscriber<T2> sub2_;
+  StampedMessageSubscriber<AdapterType0, DataType0> sub0_;
+  StampedMessageSubscriber<AdapterType1, DataType1> sub1_;
+  StampedMessageSubscriber<AdapterType2, DataType2> sub2_;
   std::function<void(
-    const boost::optional<const std::shared_ptr<T0>> &,
-    const boost::optional<const std::shared_ptr<T1>> &,
-    const boost::optional<const std::shared_ptr<T2>> &)>
+    const std::optional<const DataType0> &, const std::optional<const DataType1> &,
+    const std::optional<const DataType2> &)>
     callback_;
 };
 
-template <typename T0, typename T1, typename T2, typename T3>
+template <
+  typename AdapterType0, typename AdapterType1, typename AdapterType2, typename AdapterType3,
+  typename DataType0 = AdapterType0, typename DataType1 = AdapterType1,
+  typename DataType2 = AdapterType2, typename DataType3 = AdapterType3>
 class MessageSynchronizer4 : public SynchronizerBase
 {
 public:
@@ -221,14 +233,14 @@ public:
     const std::chrono::milliseconds & poll_duration, const std::chrono::milliseconds & allow_delay,
     const rclcpp::SubscriptionOptionsWithAllocator<AllocatorT> & options =
       rclcpp::SubscriptionOptionsWithAllocator<AllocatorT>(),
-    const std::function<rclcpp::Time(const std::shared_ptr<T0>)> & get_timestamp_function_topic0 =
-      [](const auto & data) { return data->header.stamp; },
-    const std::function<rclcpp::Time(const std::shared_ptr<T1>)> & get_timestamp_function_topic1 =
-      [](const auto & data) { return data->header.stamp; },
-    const std::function<rclcpp::Time(const std::shared_ptr<T2>)> & get_timestamp_function_topic2 =
-      [](const auto & data) { return data->header.stamp; },
-    const std::function<rclcpp::Time(const std::shared_ptr<T3>)> & get_timestamp_function_topic3 =
-      [](const auto & data) { return data->header.stamp; })
+    const std::function<rclcpp::Time(const DataType0 &)> & get_timestamp_function_topic0 =
+      [](const auto & data) { return data.header.stamp; },
+    const std::function<rclcpp::Time(const DataType1 &)> & get_timestamp_function_topic1 =
+      [](const auto & data) { return data.header.stamp; },
+    const std::function<rclcpp::Time(const DataType2 &)> & get_timestamp_function_topic2 =
+      [](const auto & data) { return data.header.stamp; },
+    const std::function<rclcpp::Time(const DataType3 &)> & get_timestamp_function_topic3 =
+      [](const auto & data) { return data.header.stamp; })
   : SynchronizerBase(node, poll_duration, allow_delay),
     sub0_(
       topic_names[0], node, poll_duration, allow_delay, options, 10, get_timestamp_function_topic0),
@@ -239,18 +251,17 @@ public:
     sub3_(
       topic_names[3], node, poll_duration, allow_delay, options, 10, get_timestamp_function_topic3)
   {
+    // timer_ = node->create_wall_timer(poll_duration, std::bind(&MessageSynchronizer4::poll, this));
   }
   void registerCallback(std::function<void(
-                          const boost::optional<const std::shared_ptr<T0>> &,
-                          const boost::optional<const std::shared_ptr<T1>> &,
-                          const boost::optional<const std::shared_ptr<T2>> &,
-                          const boost::optional<const std::shared_ptr<T3>> &)>
+                          const std::optional<DataType0> &, const std::optional<DataType1> &,
+                          const std::optional<DataType2> &, const std::optional<DataType3> &)>
                           callback)
   {
     callback_ = callback;
     callback_registered_ = true;
   }
-  void poll()
+  void poll() override
   {
     poll_timestamp_ = clock_ptr_->now();
     if (callback_registered_) {
@@ -261,15 +272,13 @@ public:
   }
 
 private:
-  StampedMessageSubscriber<T0> sub0_;
-  StampedMessageSubscriber<T1> sub1_;
-  StampedMessageSubscriber<T2> sub2_;
-  StampedMessageSubscriber<T3> sub3_;
+  StampedMessageSubscriber<AdapterType0, DataType0> sub0_;
+  StampedMessageSubscriber<AdapterType1, DataType1> sub1_;
+  StampedMessageSubscriber<AdapterType2, DataType2> sub2_;
+  StampedMessageSubscriber<AdapterType3, DataType3> sub3_;
   std::function<void(
-    const boost::optional<const std::shared_ptr<T0>> &,
-    const boost::optional<const std::shared_ptr<T1>> &,
-    const boost::optional<const std::shared_ptr<T2>> &,
-    const boost::optional<const std::shared_ptr<T3>> &)>
+    const std::optional<const DataType0> &, const std::optional<const DataType1> &,
+    const std::optional<const DataType2> &, const std::optional<const DataType3> &)>
     callback_;
 };
 
