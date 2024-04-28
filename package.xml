@@ -13,8 +13,8 @@
   <depend>rclcpp</depend>
   <depend>sensor_msgs</depend>
   <depend>boost</depend>
-  <depend>pcl_type_adapter</depend>
-
+  
+  <test_depend>pcl_type_adapter</test_depend>
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ouxt_lint_common</test_depend>
 

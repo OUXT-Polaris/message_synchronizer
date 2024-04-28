@@ -25,7 +25,12 @@ ament_auto_add_executable(example
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
+  find_package(pcl_type_adapter REQUIRED)
+  find_package(PCL REQUIRED)
   ament_auto_add_gtest(test_type_adapter test/test_type_adapter.cpp)
+  target_include_directories(test_type_adapter PRIVATE ${PCL_INCLUDE_DIRS})
+  target_link_directories(test_type_adapter PRIVATE ${PCL_LIBRARY_DIRS})
+  ament_target_dependencies(test_type_adapter pcl_type_adapter)
   ament_lint_auto_find_test_dependencies()
 endif()
 
