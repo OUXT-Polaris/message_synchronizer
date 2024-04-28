@@ -20,6 +20,9 @@
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <string>
 
+using AdaptedType = rclcpp::TypeAdapter<
+  std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>>, sensor_msgs::msg::PointCloud2>;
+
 class NodeWithAdapter : public rclcpp::Node
 {
 public:

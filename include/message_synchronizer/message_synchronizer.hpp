@@ -115,9 +115,7 @@ protected:
   std::shared_ptr<rclcpp::Clock> clock_ptr_;
 };
 
-template <
-  typename AdapterType0, typename AdapterType1, typename DataType0 = AdapterType0,
-  typename DataType1 = AdapterType1>
+template <typename MessageType0, typename MessageType1>
 class MessageSynchronizer2 : public SynchronizerBase
 {
 public:
@@ -127,9 +125,9 @@ public:
     const std::chrono::milliseconds & poll_duration, const std::chrono::milliseconds & allow_delay,
     const rclcpp::SubscriptionOptionsWithAllocator<AllocatorT> & options =
       rclcpp::SubscriptionOptionsWithAllocator<AllocatorT>(),
-    const std::function<rclcpp::Time(const DataType0 &)> & get_timestamp_function_topic0 =
+    const std::function<rclcpp::Time(const MessageType0 &)> & get_timestamp_function_topic0 =
       [](const auto & data) { return data.header.stamp; },
-    const std::function<rclcpp::Time(const DataType1 &)> & get_timestamp_function_topic1 =
+    const std::function<rclcpp::Time(const MessageType1 &)> & get_timestamp_function_topic1 =
       [](const auto & data) { return data.header.stamp; })
   : SynchronizerBase(node, poll_duration, allow_delay),
     sub0_(
@@ -140,7 +138,7 @@ public:
     timer_ = node->create_wall_timer(poll_duration, std::bind(&MessageSynchronizer2::poll, this));
   }
   void registerCallback(
-    std::function<void(const std::optional<DataType0> &, const std::optional<DataType1> &)>
+    std::function<void(const std::optional<MessageType0> &, const std::optional<MessageType1> &)>
       callback)
   {
     callback_ = callback;
@@ -156,17 +154,14 @@ public:
   }
 
 private:
-  StampedMessageSubscriber<AdapterType0, DataType0> sub0_;
-  StampedMessageSubscriber<AdapterType1, DataType1> sub1_;
+  StampedMessageSubscriber<MessageType0> sub0_;
+  StampedMessageSubscriber<MessageType1> sub1_;
   std::function<void(
-    const std::optional<const DataType0> &, const std::optional<const DataType1> &)>
+    const std::optional<const MessageType0> &, const std::optional<const MessageType1> &)>
     callback_;
 };
 
-template <
-  typename AdapterType0, typename AdapterType1, typename AdapterType2,
-  typename DataType0 = AdapterType0, typename DataType1 = AdapterType1,
-  typename DataType2 = AdapterType2>
+template <typename MessageType0, typename MessageType1, typename MessageType2>
 class MessageSynchronizer3 : public SynchronizerBase
 {
 public:
@@ -176,11 +171,11 @@ public:
     const std::chrono::milliseconds & poll_duration, const std::chrono::milliseconds & allow_delay,
     const rclcpp::SubscriptionOptionsWithAllocator<AllocatorT> & options =
       rclcpp::SubscriptionOptionsWithAllocator<AllocatorT>(),
-    const std::function<rclcpp::Time(const DataType0 &)> & get_timestamp_function_topic0 =
+    const std::function<rclcpp::Time(const MessageType0 &)> & get_timestamp_function_topic0 =
       [](const auto & data) { return data.header.stamp; },
-    const std::function<rclcpp::Time(const DataType1 &)> & get_timestamp_function_topic1 =
+    const std::function<rclcpp::Time(const MessageType1 &)> & get_timestamp_function_topic1 =
       [](const auto & data) { return data.header.stamp; },
-    const std::function<rclcpp::Time(const DataType2 &)> & get_timestamp_function_topic2 =
+    const std::function<rclcpp::Time(const MessageType2 &)> & get_timestamp_function_topic2 =
       [](const auto & data) { return data.header.stamp; })
   : SynchronizerBase(node, poll_duration, allow_delay),
     sub0_(
@@ -193,8 +188,8 @@ public:
     timer_ = node->create_wall_timer(poll_duration, std::bind(&MessageSynchronizer3::poll, this));
   }
   void registerCallback(std::function<void(
-                          const std::optional<DataType0> &, const std::optional<DataType1> &,
-                          const std::optional<DataType2> &)>
+                          const std::optional<MessageType0> &, const std::optional<MessageType1> &,
+                          const std::optional<MessageType2> &)>
                           callback)
   {
     callback_ = callback;
@@ -211,19 +206,17 @@ public:
   }
 
 private:
-  StampedMessageSubscriber<AdapterType0, DataType0> sub0_;
-  StampedMessageSubscriber<AdapterType1, DataType1> sub1_;
-  StampedMessageSubscriber<AdapterType2, DataType2> sub2_;
+  StampedMessageSubscriber<MessageType0> sub0_;
+  StampedMessageSubscriber<MessageType1> sub1_;
+  StampedMessageSubscriber<MessageType2> sub2_;
   std::function<void(
-    const std::optional<const DataType0> &, const std::optional<const DataType1> &,
-    const std::optional<const DataType2> &)>
+    const std::optional<const MessageType0> &, const std::optional<const MessageType1> &,
+    const std::optional<const MessageType2> &)>
     callback_;
 };
 
 template <
-  typename AdapterType0, typename AdapterType1, typename AdapterType2, typename AdapterType3,
-  typename DataType0 = AdapterType0, typename DataType1 = AdapterType1,
-  typename DataType2 = AdapterType2, typename DataType3 = AdapterType3>
+  typename MessageType0, typename MessageType1, typename MessageType2, typename MessageType3>
 class MessageSynchronizer4 : public SynchronizerBase
 {
 public:
@@ -233,13 +226,13 @@ public:
     const std::chrono::milliseconds & poll_duration, const std::chrono::milliseconds & allow_delay,
     const rclcpp::SubscriptionOptionsWithAllocator<AllocatorT> & options =
       rclcpp::SubscriptionOptionsWithAllocator<AllocatorT>(),
-    const std::function<rclcpp::Time(const DataType0 &)> & get_timestamp_function_topic0 =
+    const std::function<rclcpp::Time(const MessageType0 &)> & get_timestamp_function_topic0 =
       [](const auto & data) { return data.header.stamp; },
-    const std::function<rclcpp::Time(const DataType1 &)> & get_timestamp_function_topic1 =
+    const std::function<rclcpp::Time(const MessageType1 &)> & get_timestamp_function_topic1 =
       [](const auto & data) { return data.header.stamp; },
-    const std::function<rclcpp::Time(const DataType2 &)> & get_timestamp_function_topic2 =
+    const std::function<rclcpp::Time(const MessageType2 &)> & get_timestamp_function_topic2 =
       [](const auto & data) { return data.header.stamp; },
-    const std::function<rclcpp::Time(const DataType3 &)> & get_timestamp_function_topic3 =
+    const std::function<rclcpp::Time(const MessageType3 &)> & get_timestamp_function_topic3 =
       [](const auto & data) { return data.header.stamp; })
   : SynchronizerBase(node, poll_duration, allow_delay),
     sub0_(
@@ -254,8 +247,8 @@ public:
     timer_ = node->create_wall_timer(poll_duration, std::bind(&MessageSynchronizer4::poll, this));
   }
   void registerCallback(std::function<void(
-                          const std::optional<DataType0> &, const std::optional<DataType1> &,
-                          const std::optional<DataType2> &, const std::optional<DataType3> &)>
+                          const std::optional<MessageType0> &, const std::optional<MessageType1> &,
+                          const std::optional<MessageType2> &, const std::optional<MessageType3> &)>
                           callback)
   {
     callback_ = callback;
@@ -272,13 +265,13 @@ public:
   }
 
 private:
-  StampedMessageSubscriber<AdapterType0, DataType0> sub0_;
-  StampedMessageSubscriber<AdapterType1, DataType1> sub1_;
-  StampedMessageSubscriber<AdapterType2, DataType2> sub2_;
-  StampedMessageSubscriber<AdapterType3, DataType3> sub3_;
+  StampedMessageSubscriber<MessageType0> sub0_;
+  StampedMessageSubscriber<MessageType1> sub1_;
+  StampedMessageSubscriber<MessageType2> sub2_;
+  StampedMessageSubscriber<MessageType3> sub3_;
   std::function<void(
-    const std::optional<const DataType0> &, const std::optional<const DataType1> &,
-    const std::optional<const DataType2> &, const std::optional<const DataType3> &)>
+    const std::optional<const MessageType0> &, const std::optional<const MessageType1> &,
+    const std::optional<const MessageType2> &, const std::optional<const MessageType3> &)>
     callback_;
 };
 
