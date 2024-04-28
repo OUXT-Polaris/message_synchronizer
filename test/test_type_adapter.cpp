@@ -20,8 +20,8 @@
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <string>
 
-using AdaptedType = rclcpp::TypeAdapter<
-  std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>>, sensor_msgs::msg::PointCloud2>;
+using PointCloudType = std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>>;
+using AdaptedType = rclcpp::TypeAdapter<PointCloudType, sensor_msgs::msg::PointCloud2>;
 
 class NodeWithAdapter : public rclcpp::Node
 {
@@ -32,7 +32,15 @@ public:
       this,
       {"/perception/front_lidar/points_transform_node/output",
        "/perception/rear_lidar/points_transform_node/output"},
-      std::chrono::milliseconds{100}, std::chrono::milliseconds{30})
+      std::chrono::milliseconds{100}, std::chrono::milliseconds{30}),
+    sub_(
+      "/perception/front_lidar/points_transform_node/output", this, std::chrono::milliseconds{100},
+      std::chrono::milliseconds{30},
+      rclcpp::SubscriptionOptionsWithAllocator<std::allocator<void>>(), 10,
+      [](const PointCloudType data) {
+        // return rclcpp::Time();
+        return pcl_conversions::fromPCL(data->header).stamp;
+      })
   {
     // const auto func =
     //   std::bind(&Example::callback, this, std::placeholders::_1, std::placeholders::_2);
@@ -43,6 +51,7 @@ private:
   message_synchronizer::MessageSynchronizer2<
     sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2>
     sync_;
+  message_synchronizer::StampedMessageSubscriber<AdaptedType, PointCloudType> sub_;
   //   void callback(
   //     const std::optional<sensor_msgs::msg::PointCloud2> & msg0,
   //     const std::optional<sensor_msgs::msg::PointCloud2> & msg1)

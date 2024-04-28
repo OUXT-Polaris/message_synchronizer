@@ -28,7 +28,7 @@
 
 namespace message_synchronizer
 {
-template <typename MessageType>
+template <typename MessageType, typename NativeMessageType = MessageType>
 class StampedMessageSubscriber
 {
 public:
@@ -39,7 +39,7 @@ public:
     const rclcpp::SubscriptionOptionsWithAllocator<AllocatorT> & options =
       rclcpp::SubscriptionOptionsWithAllocator<AllocatorT>(),
     size_t buffer_size = 10,
-    const std::function<rclcpp::Time(const MessageType)> & get_timestamp_function =
+    const std::function<rclcpp::Time(const NativeMessageType)> & get_timestamp_function =
       [](const auto & data) { return data.header.stamp; })
   : topic_name(topic_name),
     poll_duration(poll_duration),
@@ -47,9 +47,30 @@ public:
     get_timestamp_function_(get_timestamp_function),
     buffer_size_(buffer_size)
   {
-    sub_ = rclcpp::create_subscription<MessageType>(
-      node, topic_name, rclcpp::QoS(buffer_size),
-      std::bind(&StampedMessageSubscriber::callback, this, std::placeholders::_1), options);
+    if constexpr (rosidl_generator_traits::is_message<MessageType>::value) {
+      sub_ = rclcpp::create_subscription<MessageType>(
+        node, topic_name, rclcpp::QoS(buffer_size),
+        [this](const std::shared_ptr<MessageType> msg) {
+          MessageType data = *msg;
+          buffer_.push_back(data);
+          while (buffer_.size() > buffer_size_) {
+            buffer_.pop_front();
+          }
+        },
+        options);
+    }
+    if constexpr (rclcpp::is_type_adapter<MessageType>::value) {
+      sub_ = rclcpp::create_subscription<MessageType>(
+        node, topic_name, rclcpp::QoS(buffer_size),
+        [this](const std::shared_ptr<NativeMessageType> msg) {
+          NativeMessageType data = *msg;
+          buffer_.push_back(data);
+          while (buffer_.size() > buffer_size_) {
+            buffer_.pop_front();
+          }
+        },
+        options);
+    }
   }
   std::optional<const MessageType> query(const rclcpp::Time & stamp)
   {
@@ -77,17 +98,9 @@ public:
 
 private:
   double buffer_duration_;
-  std::deque<MessageType> buffer_;
+  std::deque<NativeMessageType> buffer_;
   std::shared_ptr<rclcpp::Subscription<MessageType>> sub_;
-  void callback(const std::shared_ptr<MessageType> msg)
-  {
-    MessageType data = *msg;
-    buffer_.push_back(data);
-    while (buffer_.size() > buffer_size_) {
-      buffer_.pop_front();
-    }
-  }
-  const std::function<rclcpp::Time(const MessageType &)> get_timestamp_function_;
+  const std::function<rclcpp::Time(const NativeMessageType &)> get_timestamp_function_;
   const size_t buffer_size_;
 };
 
