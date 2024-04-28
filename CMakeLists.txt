@@ -16,35 +16,17 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 # find dependencies
-find_package(ament_cmake REQUIRED)
-find_package(rclcpp REQUIRED)
-find_package(sensor_msgs REQUIRED)
+find_package(ament_cmake_auto REQUIRED)
+ament_auto_find_build_dependencies()
 
-include_directories(
-  include
-)
-
-add_executable(example
+ament_auto_add_executable(example
   src/example.cpp
 )
-ament_target_dependencies(example
-  rclcpp
-  sensor_msgs)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
+  ament_auto_add_gtest(test_type_adapter test/test_type_adapter.cpp)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-install(
-  DIRECTORY "include/"
-  DESTINATION include
-)
-
-install(TARGETS
-  example
-  DESTINATION lib/${PROJECT_NAME}
-)
-
-ament_export_include_directories(include)
-ament_package()
+ament_auto_package()
