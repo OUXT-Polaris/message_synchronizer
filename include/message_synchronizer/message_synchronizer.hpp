@@ -58,7 +58,8 @@ public:
           }
         },
         options);
-    } else if constexpr (rclcpp::is_type_adapter<MessageType>::value) {
+    }
+    if constexpr (rclcpp::is_type_adapter<MessageType>::value) {
       sub_ = rclcpp::create_subscription<MessageType>(
         node, topic_name, rclcpp::QoS(buffer_size),
         [this](const std::shared_ptr<NativeMessageType> msg) {
@@ -69,11 +70,6 @@ public:
           }
         },
         options);
-    } else {
-      static_assert(
-        !rosidl_generator_traits::is_message<MessageType>::value &&
-          !rclcpp::is_type_adapter<MessageType>::value,
-        "Template parameter 'MessageType' should be ROS 2 message or Type adaper type.");
     }
   }
   std::optional<const MessageType> query(const rclcpp::Time & stamp)
