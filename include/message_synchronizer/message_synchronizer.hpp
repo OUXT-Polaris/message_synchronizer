@@ -28,7 +28,7 @@
 
 namespace message_synchronizer
 {
-template <typename AdapterType, typename DataType = AdapterType>
+template <typename MessageType>
 class StampedMessageSubscriber
 {
 public:
@@ -39,7 +39,7 @@ public:
     const rclcpp::SubscriptionOptionsWithAllocator<AllocatorT> & options =
       rclcpp::SubscriptionOptionsWithAllocator<AllocatorT>(),
     size_t buffer_size = 10,
-    const std::function<rclcpp::Time(const DataType)> & get_timestamp_function =
+    const std::function<rclcpp::Time(const MessageType)> & get_timestamp_function =
       [](const auto & data) { return data.header.stamp; })
   : topic_name(topic_name),
     poll_duration(poll_duration),
@@ -47,14 +47,14 @@ public:
     get_timestamp_function_(get_timestamp_function),
     buffer_size_(buffer_size)
   {
-    sub_ = rclcpp::create_subscription<AdapterType>(
+    sub_ = rclcpp::create_subscription<MessageType>(
       node, topic_name, rclcpp::QoS(buffer_size),
       std::bind(&StampedMessageSubscriber::callback, this, std::placeholders::_1), options);
   }
-  std::optional<const DataType> query(const rclcpp::Time & stamp)
+  std::optional<const MessageType> query(const rclcpp::Time & stamp)
   {
     std::vector<double> diff;
-    std::vector<DataType> messages;
+    std::vector<MessageType> messages;
     double poll_start_diff = std::chrono::duration<double>(poll_duration).count() * -1;
     double poll_end_diff = std::chrono::duration<double>(allow_delay).count();
     for (const auto & data : buffer_) {
@@ -77,17 +77,17 @@ public:
 
 private:
   double buffer_duration_;
-  std::deque<DataType> buffer_;
-  std::shared_ptr<rclcpp::Subscription<AdapterType>> sub_;
-  void callback(const std::shared_ptr<DataType> msg)
+  std::deque<MessageType> buffer_;
+  std::shared_ptr<rclcpp::Subscription<MessageType>> sub_;
+  void callback(const std::shared_ptr<MessageType> msg)
   {
-    DataType data = *msg;
+    MessageType data = *msg;
     buffer_.push_back(data);
     while (buffer_.size() > buffer_size_) {
       buffer_.pop_front();
     }
   }
-  const std::function<rclcpp::Time(const DataType &)> get_timestamp_function_;
+  const std::function<rclcpp::Time(const MessageType &)> get_timestamp_function_;
   const size_t buffer_size_;
 };
 
