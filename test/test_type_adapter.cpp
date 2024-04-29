@@ -90,6 +90,7 @@ public:
       &SubNode::callback4, this, std::placeholders::_1, std::placeholders::_2,
       std::placeholders::_3, std::placeholders::_4));
   }
+  bool is_synchronized = false;
 
 private:
   rclcpp::Time getTime(const PointCloudType data)
@@ -101,8 +102,9 @@ private:
   void callback2(
     const std::optional<PointCloudType> & msg0, const std::optional<PointCloudType> & msg1)
   {
-    if (msg0 && msg1) {
-    }
+    is_synchronized = true;
+    EXPECT_TRUE(msg0);
+    EXPECT_TRUE(msg1);
   }
 
   message_synchronizer::MessageSynchronizer3<AdaptedType, AdaptedType, AdaptedType> sync3_;
@@ -110,8 +112,10 @@ private:
     const std::optional<PointCloudType> & msg0, const std::optional<PointCloudType> & msg1,
     const std::optional<PointCloudType> & msg2)
   {
-    if (msg0 && msg1 && msg2) {
-    }
+    is_synchronized = true;
+    EXPECT_TRUE(msg0);
+    EXPECT_TRUE(msg1);
+    EXPECT_TRUE(msg2);
   }
 
   message_synchronizer::MessageSynchronizer4<AdaptedType, AdaptedType, AdaptedType, AdaptedType>
@@ -120,8 +124,11 @@ private:
     const std::optional<PointCloudType> & msg0, const std::optional<PointCloudType> & msg1,
     const std::optional<PointCloudType> & msg2, const std::optional<PointCloudType> & msg3)
   {
-    if (msg0 && msg1 && msg2 && msg3) {
-    }
+    is_synchronized = true;
+    EXPECT_TRUE(msg0);
+    EXPECT_TRUE(msg1);
+    EXPECT_TRUE(msg2);
+    EXPECT_TRUE(msg3);
   }
 };
 
@@ -131,6 +138,14 @@ TEST(TypeAdaptaer, Sync2Topics)
   rclcpp::NodeOptions options;
   options.use_intra_process_comms(true);
   const auto sub_node = std::make_shared<SubNode>(options);
+  const auto pub_node = std::make_shared<PubNode>(options);
+  rclcpp::executors::SingleThreadedExecutor exec;
+  exec.add_node(sub_node);
+  exec.add_node(pub_node);
+  using namespace std::chrono_literals;
+  exec.spin_some(1s);
+  rclcpp::shutdown();
+  EXPECT_TRUE(sub_node->is_synchronized);
 }
 
 int main(int argc, char ** argv)
