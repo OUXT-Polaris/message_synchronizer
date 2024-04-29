@@ -33,9 +33,15 @@ public:
     pub1_ = create_publisher<AdaptedType>("point1", 1);
     pub2_ = create_publisher<AdaptedType>("point2", 1);
     pub3_ = create_publisher<AdaptedType>("point3", 1);
+    using namespace std::chrono_literals;
+    timer_ = this->create_wall_timer(20ms, std::bind(&PubNode::publish, this));
+  }
+  void publish()
+  {
     PointCloudType point_cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
     std_msgs::msg::Header header;
     header.frame_id = "base_link";
+    header.stamp = get_clock()->now();
     point_cloud->header = pcl_conversions::toPCL(header);
     pub0_->publish(point_cloud);
     pub1_->publish(point_cloud);
@@ -46,6 +52,7 @@ public:
   std::shared_ptr<rclcpp::Publisher<AdaptedType>> pub1_;
   std::shared_ptr<rclcpp::Publisher<AdaptedType>> pub2_;
   std::shared_ptr<rclcpp::Publisher<AdaptedType>> pub3_;
+  rclcpp::TimerBase::SharedPtr timer_;
 };
 
 class SubNode : public rclcpp::Node
@@ -79,6 +86,9 @@ public:
     sync3_.registerCallback(std::bind(
       &SubNode::callback3, this, std::placeholders::_1, std::placeholders::_2,
       std::placeholders::_3));
+    sync4_.registerCallback(std::bind(
+      &SubNode::callback4, this, std::placeholders::_1, std::placeholders::_2,
+      std::placeholders::_3, std::placeholders::_4));
   }
 
 private:
@@ -114,6 +124,14 @@ private:
     }
   }
 };
+
+TEST(TypeAdaptaer, Sync2Topics)
+{
+  rclcpp::init(0, nullptr);
+  rclcpp::NodeOptions options;
+  options.use_intra_process_comms(true);
+  const auto sub_node = std::make_shared<SubNode>(options);
+}
 
 int main(int argc, char ** argv)
 {
