@@ -33,17 +33,11 @@ public:
     pub1_ = create_publisher<AdaptedType>("point1", 1);
     pub2_ = create_publisher<AdaptedType>("point2", 1);
     pub3_ = create_publisher<AdaptedType>("point3", 1);
-    using namespace std::chrono_literals;
-    timer_ = this->create_wall_timer(20ms, std::bind(&PubNode::publish, this));
+    // using namespace std::chrono_literals;
+    // timer_ = this->create_wall_timer(20ms, std::bind(&PubNode::publish, this));
   }
-  void publish()
+  void publish(const PointCloudType & point_cloud)
   {
-    std::cout << __FILE__ << "," << __LINE__ << std::endl;
-    PointCloudType point_cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-    std_msgs::msg::Header header;
-    header.frame_id = "base_link";
-    header.stamp = get_clock()->now();
-    point_cloud->header = pcl_conversions::toPCL(header);
     pub0_->publish(point_cloud);
     pub1_->publish(point_cloud);
     pub2_->publish(point_cloud);
@@ -196,6 +190,14 @@ TEST(TypeAdaptaer, Sync2Topics)
   const auto pub_node = std::make_shared<PubNode>(options);
   exec.add_node(sub_node);
   exec.add_node(pub_node);
+
+  PointCloudType point_cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+  std_msgs::msg::Header header;
+  header.frame_id = "base_link";
+  header.stamp = pub_node->get_clock()->now();
+  point_cloud->header = pcl_conversions::toPCL(header);
+  pub_node->publish(point_cloud);
+
   exec.spin();
   rclcpp::shutdown();
   EXPECT_TRUE(sub_node->is_synchronized);
@@ -211,6 +213,14 @@ TEST(TypeAdaptaer, Sync3Topics)
   const auto pub_node = std::make_shared<PubNode>(options);
   exec.add_node(sub_node);
   exec.add_node(pub_node);
+
+  PointCloudType point_cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+  std_msgs::msg::Header header;
+  header.frame_id = "base_link";
+  header.stamp = pub_node->get_clock()->now();
+  point_cloud->header = pcl_conversions::toPCL(header);
+  pub_node->publish(point_cloud);
+
   exec.spin();
   rclcpp::shutdown();
   EXPECT_TRUE(sub_node->is_synchronized);
@@ -226,6 +236,14 @@ TEST(TypeAdaptaer, Sync4Topics)
   const auto pub_node = std::make_shared<PubNode>(options);
   exec.add_node(sub_node);
   exec.add_node(pub_node);
+
+  PointCloudType point_cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+  std_msgs::msg::Header header;
+  header.frame_id = "base_link";
+  header.stamp = pub_node->get_clock()->now();
+  point_cloud->header = pcl_conversions::toPCL(header);
+  pub_node->publish(point_cloud);
+
   exec.spin();
   rclcpp::shutdown();
   EXPECT_TRUE(sub_node->is_synchronized);
