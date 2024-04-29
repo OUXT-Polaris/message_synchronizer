@@ -18,16 +18,41 @@
 #include <pcl_type_adapter/pcl_type_adapter.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
+#include <std_msgs/msg/header.hpp>
 #include <string>
 
 using PointCloudType = std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>>;
 using AdaptedType = rclcpp::TypeAdapter<PointCloudType, sensor_msgs::msg::PointCloud2>;
 
+class PubNode : public rclcpp::Node
+{
+public:
+  explicit PubNode(const rclcpp::NodeOptions & option) : Node("pub", option)
+  {
+    pub0_ = create_publisher<AdaptedType>("point0", 1);
+    pub1_ = create_publisher<AdaptedType>("point1", 1);
+    pub2_ = create_publisher<AdaptedType>("point2", 1);
+    pub3_ = create_publisher<AdaptedType>("point3", 1);
+    PointCloudType point_cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+    std_msgs::msg::Header header;
+    header.frame_id = "base_link";
+    point_cloud->header = pcl_conversions::toPCL(header);
+    pub0_->publish(point_cloud);
+    pub1_->publish(point_cloud);
+    pub2_->publish(point_cloud);
+    pub3_->publish(point_cloud);
+  }
+  std::shared_ptr<rclcpp::Publisher<AdaptedType>> pub0_;
+  std::shared_ptr<rclcpp::Publisher<AdaptedType>> pub1_;
+  std::shared_ptr<rclcpp::Publisher<AdaptedType>> pub2_;
+  std::shared_ptr<rclcpp::Publisher<AdaptedType>> pub3_;
+};
+
 class SubNode : public rclcpp::Node
 {
 public:
   explicit SubNode(const rclcpp::NodeOptions & option)
-  : Node("example", option),
+  : Node("sub", option),
     sync2_(
       this, {"point0", "point1"}, std::chrono::milliseconds{100}, std::chrono::milliseconds{30},
       rclcpp::SubscriptionOptionsWithAllocator<std::allocator<void>>(),
