@@ -186,19 +186,19 @@ TEST(TypeAdaptaer, Sync2Topics)
   rclcpp::NodeOptions options;
   options.use_intra_process_comms(true);
   rclcpp::executors::SingleThreadedExecutor exec;
-  const auto sub_node = std::make_shared<Sub2Node>(options, [&]() { exec.cancel(); });
-  const auto pub_node = std::make_shared<PubNode>(options);
-  exec.add_node(sub_node);
-  exec.add_node(pub_node);
 
+  const auto pub_node = std::make_shared<PubNode>(options);
   PointCloudType point_cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   std_msgs::msg::Header header;
   header.frame_id = "base_link";
   header.stamp = pub_node->get_clock()->now();
   point_cloud->header = pcl_conversions::toPCL(header);
-  pub_node->publish(point_cloud);
 
+  const auto sub_node = std::make_shared<Sub2Node>(options, [&]() { exec.cancel(); });
+  exec.add_node(sub_node);
+  exec.add_node(pub_node);
   exec.spin();
+  pub_node->publish(point_cloud);
   rclcpp::shutdown();
   EXPECT_TRUE(sub_node->is_synchronized);
 }
@@ -209,18 +209,19 @@ TEST(TypeAdaptaer, Sync3Topics)
   rclcpp::NodeOptions options;
   options.use_intra_process_comms(true);
   rclcpp::executors::SingleThreadedExecutor exec;
-  const auto sub_node = std::make_shared<Sub3Node>(options, [&]() { exec.cancel(); });
-  const auto pub_node = std::make_shared<PubNode>(options);
-  exec.add_node(sub_node);
-  exec.add_node(pub_node);
 
+  const auto pub_node = std::make_shared<PubNode>(options);
   PointCloudType point_cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   std_msgs::msg::Header header;
   header.frame_id = "base_link";
   header.stamp = pub_node->get_clock()->now();
   point_cloud->header = pcl_conversions::toPCL(header);
-  pub_node->publish(point_cloud);
 
+  const auto sub_node = std::make_shared<Sub3Node>(options, [&]() { exec.cancel(); });
+
+  exec.add_node(sub_node);
+  exec.add_node(pub_node);
+  pub_node->publish(point_cloud);
   exec.spin();
   rclcpp::shutdown();
   EXPECT_TRUE(sub_node->is_synchronized);
@@ -232,18 +233,19 @@ TEST(TypeAdaptaer, Sync4Topics)
   rclcpp::NodeOptions options;
   options.use_intra_process_comms(true);
   rclcpp::executors::SingleThreadedExecutor exec;
-  const auto sub_node = std::make_shared<Sub4Node>(options, [&]() { exec.cancel(); });
-  const auto pub_node = std::make_shared<PubNode>(options);
-  exec.add_node(sub_node);
-  exec.add_node(pub_node);
 
+  const auto pub_node = std::make_shared<PubNode>(options);
   PointCloudType point_cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   std_msgs::msg::Header header;
   header.frame_id = "base_link";
   header.stamp = pub_node->get_clock()->now();
   point_cloud->header = pcl_conversions::toPCL(header);
-  pub_node->publish(point_cloud);
 
+  const auto sub_node = std::make_shared<Sub4Node>(options, [&]() { exec.cancel(); });
+
+  exec.add_node(sub_node);
+  exec.add_node(pub_node);
+  pub_node->publish(point_cloud);
   exec.spin();
   rclcpp::shutdown();
   EXPECT_TRUE(sub_node->is_synchronized);
