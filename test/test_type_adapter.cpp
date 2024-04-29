@@ -23,47 +23,37 @@
 using PointCloudType = std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>>;
 using AdaptedType = rclcpp::TypeAdapter<PointCloudType, sensor_msgs::msg::PointCloud2>;
 
-class NodeWithAdapter : public rclcpp::Node
+class SubNode : public rclcpp::Node
 {
 public:
-  explicit NodeWithAdapter(const rclcpp::NodeOptions & option)
+  explicit SubNode(const rclcpp::NodeOptions & option)
   : Node("example", option),
     sync_(
       this,
       {"/perception/front_lidar/points_transform_node/output",
        "/perception/rear_lidar/points_transform_node/output"},
-      std::chrono::milliseconds{100}, std::chrono::milliseconds{30}),
-    sub_(
-      "/perception/front_lidar/points_transform_node/output", this, std::chrono::milliseconds{100},
-      std::chrono::milliseconds{30},
-      rclcpp::SubscriptionOptionsWithAllocator<std::allocator<void>>(), 10,
-      [](const PointCloudType data) {
-        // return rclcpp::Time();
-        return pcl_conversions::fromPCL(data->header).stamp;
-      })
+      std::chrono::milliseconds{100}, std::chrono::milliseconds{30},
+      rclcpp::SubscriptionOptionsWithAllocator<std::allocator<void>>(),
+      [](const PointCloudType data) { return pcl_conversions::fromPCL(data->header).stamp; },
+      [](const PointCloudType data) { return pcl_conversions::fromPCL(data->header).stamp; })
   {
-    // const auto func =
-    //   std::bind(&Example::callback, this, std::placeholders::_1, std::placeholders::_2);
-    // sync_.registerCallback(func);
+    sync_.registerCallback(
+      std::bind(&SubNode::callback2, this, std::placeholders::_1, std::placeholders::_2));
   }
 
 private:
-  message_synchronizer::MessageSynchronizer2<
-    sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2>
-    sync_;
-  message_synchronizer::StampedMessageSubscriber<AdaptedType> sub_;
-  //   void callback(
-  //     const std::optional<sensor_msgs::msg::PointCloud2> & msg0,
-  //     const std::optional<sensor_msgs::msg::PointCloud2> & msg1)
-  //   {
-  //     if (msg0) {
-  //       std::cout << __FILE__ << "," << __LINE__ << std::endl;
-  //     }
-  //     if (msg1) {
-  //       std::cout << __FILE__ << "," << __LINE__ << std::endl;
-  //     }
-  //     std::cout << __FILE__ << "," << __LINE__ << std::endl;
-  //   }
+  message_synchronizer::MessageSynchronizer2<AdaptedType, AdaptedType> sync_;
+  void callback2(
+    const std::optional<PointCloudType> & msg0, const std::optional<PointCloudType> & msg1)
+  {
+    if (msg0) {
+      std::cout << __FILE__ << "," << __LINE__ << std::endl;
+    }
+    if (msg1) {
+      std::cout << __FILE__ << "," << __LINE__ << std::endl;
+    }
+    std::cout << __FILE__ << "," << __LINE__ << std::endl;
+  }
 };
 
 int main(int argc, char ** argv)

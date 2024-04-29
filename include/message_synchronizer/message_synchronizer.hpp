@@ -80,10 +80,10 @@ public:
         options);
     }
   }
-  std::optional<const MessageType> query(const rclcpp::Time & stamp)
+  std::optional<const NativeMessageType> query(const rclcpp::Time & stamp)
   {
     std::vector<double> diff;
-    std::vector<MessageType> messages;
+    std::vector<NativeMessageType> messages;
     double poll_start_diff = std::chrono::duration<double>(poll_duration).count() * -1;
     double poll_end_diff = std::chrono::duration<double>(allow_delay).count();
     for (const auto & data : buffer_) {
@@ -136,7 +136,10 @@ protected:
   std::shared_ptr<rclcpp::Clock> clock_ptr_;
 };
 
-template <typename MessageType0, typename MessageType1>
+template <
+  typename MessageType0, typename MessageType1,
+  typename NativeMessageType0 = message_type_t<MessageType0>,
+  typename NativeMessageType1 = message_type_t<MessageType1>>
 class MessageSynchronizer2 : public SynchronizerBase
 {
 public:
@@ -146,9 +149,9 @@ public:
     const std::chrono::milliseconds & poll_duration, const std::chrono::milliseconds & allow_delay,
     const rclcpp::SubscriptionOptionsWithAllocator<AllocatorT> & options =
       rclcpp::SubscriptionOptionsWithAllocator<AllocatorT>(),
-    const std::function<rclcpp::Time(const MessageType0 &)> & get_timestamp_function_topic0 =
+    const std::function<rclcpp::Time(const NativeMessageType0 &)> & get_timestamp_function_topic0 =
       [](const auto & data) { return data.header.stamp; },
-    const std::function<rclcpp::Time(const MessageType1 &)> & get_timestamp_function_topic1 =
+    const std::function<rclcpp::Time(const NativeMessageType1 &)> & get_timestamp_function_topic1 =
       [](const auto & data) { return data.header.stamp; })
   : SynchronizerBase(node, poll_duration, allow_delay),
     sub0_(
@@ -159,7 +162,8 @@ public:
     timer_ = node->create_wall_timer(poll_duration, std::bind(&MessageSynchronizer2::poll, this));
   }
   void registerCallback(
-    std::function<void(const std::optional<MessageType0> &, const std::optional<MessageType1> &)>
+    std::function<
+      void(const std::optional<NativeMessageType0> &, const std::optional<NativeMessageType1> &)>
       callback)
   {
     callback_ = callback;
@@ -178,11 +182,16 @@ private:
   StampedMessageSubscriber<MessageType0> sub0_;
   StampedMessageSubscriber<MessageType1> sub1_;
   std::function<void(
-    const std::optional<const MessageType0> &, const std::optional<const MessageType1> &)>
+    const std::optional<const NativeMessageType0> &,
+    const std::optional<const NativeMessageType1> &)>
     callback_;
 };
 
-template <typename MessageType0, typename MessageType1, typename MessageType2>
+template <
+  typename MessageType0, typename MessageType1, typename MessageType2,
+  typename NativeMessageType0 = message_type_t<MessageType0>,
+  typename NativeMessageType1 = message_type_t<MessageType1>,
+  typename NativeMessageType2 = message_type_t<MessageType2>>
 class MessageSynchronizer3 : public SynchronizerBase
 {
 public:
@@ -192,11 +201,11 @@ public:
     const std::chrono::milliseconds & poll_duration, const std::chrono::milliseconds & allow_delay,
     const rclcpp::SubscriptionOptionsWithAllocator<AllocatorT> & options =
       rclcpp::SubscriptionOptionsWithAllocator<AllocatorT>(),
-    const std::function<rclcpp::Time(const MessageType0 &)> & get_timestamp_function_topic0 =
+    const std::function<rclcpp::Time(const NativeMessageType0 &)> & get_timestamp_function_topic0 =
       [](const auto & data) { return data.header.stamp; },
-    const std::function<rclcpp::Time(const MessageType1 &)> & get_timestamp_function_topic1 =
+    const std::function<rclcpp::Time(const NativeMessageType1 &)> & get_timestamp_function_topic1 =
       [](const auto & data) { return data.header.stamp; },
-    const std::function<rclcpp::Time(const MessageType2 &)> & get_timestamp_function_topic2 =
+    const std::function<rclcpp::Time(const NativeMessageType2 &)> & get_timestamp_function_topic2 =
       [](const auto & data) { return data.header.stamp; })
   : SynchronizerBase(node, poll_duration, allow_delay),
     sub0_(
@@ -208,10 +217,11 @@ public:
   {
     timer_ = node->create_wall_timer(poll_duration, std::bind(&MessageSynchronizer3::poll, this));
   }
-  void registerCallback(std::function<void(
-                          const std::optional<MessageType0> &, const std::optional<MessageType1> &,
-                          const std::optional<MessageType2> &)>
-                          callback)
+  void registerCallback(
+    std::function<void(
+      const std::optional<NativeMessageType0> &, const std::optional<NativeMessageType1> &,
+      const std::optional<NativeMessageType2> &)>
+      callback)
   {
     callback_ = callback;
     callback_registered_ = true;
@@ -231,13 +241,18 @@ private:
   StampedMessageSubscriber<MessageType1> sub1_;
   StampedMessageSubscriber<MessageType2> sub2_;
   std::function<void(
-    const std::optional<const MessageType0> &, const std::optional<const MessageType1> &,
-    const std::optional<const MessageType2> &)>
+    const std::optional<const NativeMessageType0> &,
+    const std::optional<const NativeMessageType1> &,
+    const std::optional<const NativeMessageType2> &)>
     callback_;
 };
 
 template <
-  typename MessageType0, typename MessageType1, typename MessageType2, typename MessageType3>
+  typename MessageType0, typename MessageType1, typename MessageType2, typename MessageType3,
+  typename NativeMessageType0 = message_type_t<MessageType0>,
+  typename NativeMessageType1 = message_type_t<MessageType1>,
+  typename NativeMessageType2 = message_type_t<MessageType2>,
+  typename NativeMessageType3 = message_type_t<MessageType3>>
 class MessageSynchronizer4 : public SynchronizerBase
 {
 public:
@@ -247,13 +262,13 @@ public:
     const std::chrono::milliseconds & poll_duration, const std::chrono::milliseconds & allow_delay,
     const rclcpp::SubscriptionOptionsWithAllocator<AllocatorT> & options =
       rclcpp::SubscriptionOptionsWithAllocator<AllocatorT>(),
-    const std::function<rclcpp::Time(const MessageType0 &)> & get_timestamp_function_topic0 =
+    const std::function<rclcpp::Time(const NativeMessageType0 &)> & get_timestamp_function_topic0 =
       [](const auto & data) { return data.header.stamp; },
-    const std::function<rclcpp::Time(const MessageType1 &)> & get_timestamp_function_topic1 =
+    const std::function<rclcpp::Time(const NativeMessageType1 &)> & get_timestamp_function_topic1 =
       [](const auto & data) { return data.header.stamp; },
-    const std::function<rclcpp::Time(const MessageType2 &)> & get_timestamp_function_topic2 =
+    const std::function<rclcpp::Time(const NativeMessageType2 &)> & get_timestamp_function_topic2 =
       [](const auto & data) { return data.header.stamp; },
-    const std::function<rclcpp::Time(const MessageType3 &)> & get_timestamp_function_topic3 =
+    const std::function<rclcpp::Time(const NativeMessageType3 &)> & get_timestamp_function_topic3 =
       [](const auto & data) { return data.header.stamp; })
   : SynchronizerBase(node, poll_duration, allow_delay),
     sub0_(
@@ -267,10 +282,11 @@ public:
   {
     timer_ = node->create_wall_timer(poll_duration, std::bind(&MessageSynchronizer4::poll, this));
   }
-  void registerCallback(std::function<void(
-                          const std::optional<MessageType0> &, const std::optional<MessageType1> &,
-                          const std::optional<MessageType2> &, const std::optional<MessageType3> &)>
-                          callback)
+  void registerCallback(
+    std::function<void(
+      const std::optional<NativeMessageType0> &, const std::optional<NativeMessageType1> &,
+      const std::optional<NativeMessageType2> &, const std::optional<NativeMessageType3> &)>
+      callback)
   {
     callback_ = callback;
     callback_registered_ = true;
@@ -291,8 +307,10 @@ private:
   StampedMessageSubscriber<MessageType2> sub2_;
   StampedMessageSubscriber<MessageType3> sub3_;
   std::function<void(
-    const std::optional<const MessageType0> &, const std::optional<const MessageType1> &,
-    const std::optional<const MessageType2> &, const std::optional<const MessageType3> &)>
+    const std::optional<const NativeMessageType0> &,
+    const std::optional<const NativeMessageType1> &,
+    const std::optional<const NativeMessageType2> &,
+    const std::optional<const NativeMessageType3> &)>
     callback_;
 };
 
