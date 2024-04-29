@@ -56,42 +56,21 @@ public:
   rclcpp::TimerBase::SharedPtr timer_;
 };
 
-class SubNode : public rclcpp::Node
+class Sub2Node : public rclcpp::Node
 {
 public:
-  explicit SubNode(
+  explicit Sub2Node(
     const rclcpp::NodeOptions & option, const std::function<void()> & cancel_callback)
   : Node("sub", option),
     cancel_callback_(cancel_callback),
     sync2_(
       this, {"point0", "point1"}, std::chrono::milliseconds{100}, std::chrono::milliseconds{30},
       rclcpp::SubscriptionOptionsWithAllocator<std::allocator<void>>(),
-      std::bind(&SubNode::getTime, this, std::placeholders::_1),
-      std::bind(&SubNode::getTime, this, std::placeholders::_1)),
-    sync3_(
-      this, {"point0", "point1", "point2"}, std::chrono::milliseconds{100},
-      std::chrono::milliseconds{30},
-      rclcpp::SubscriptionOptionsWithAllocator<std::allocator<void>>(),
-      std::bind(&SubNode::getTime, this, std::placeholders::_1),
-      std::bind(&SubNode::getTime, this, std::placeholders::_1),
-      std::bind(&SubNode::getTime, this, std::placeholders::_1)),
-    sync4_(
-      this, {"point0", "point1", "point2", "point3"}, std::chrono::milliseconds{100},
-      std::chrono::milliseconds{30},
-      rclcpp::SubscriptionOptionsWithAllocator<std::allocator<void>>(),
-      std::bind(&SubNode::getTime, this, std::placeholders::_1),
-      std::bind(&SubNode::getTime, this, std::placeholders::_1),
-      std::bind(&SubNode::getTime, this, std::placeholders::_1),
-      std::bind(&SubNode::getTime, this, std::placeholders::_1))
+      std::bind(&Sub2Node::getTime, this, std::placeholders::_1),
+      std::bind(&Sub2Node::getTime, this, std::placeholders::_1))
   {
     sync2_.registerCallback(
-      std::bind(&SubNode::callback2, this, std::placeholders::_1, std::placeholders::_2));
-    sync3_.registerCallback(std::bind(
-      &SubNode::callback3, this, std::placeholders::_1, std::placeholders::_2,
-      std::placeholders::_3));
-    sync4_.registerCallback(std::bind(
-      &SubNode::callback4, this, std::placeholders::_1, std::placeholders::_2,
-      std::placeholders::_3, std::placeholders::_4));
+      std::bind(&Sub2Node::callback2, this, std::placeholders::_1, std::placeholders::_2));
   }
   bool is_synchronized = false;
 
@@ -111,6 +90,35 @@ private:
     EXPECT_TRUE(msg1);
     cancel_callback_();
   }
+};
+
+class Sub3Node : public rclcpp::Node
+{
+public:
+  explicit Sub3Node(
+    const rclcpp::NodeOptions & option, const std::function<void()> & cancel_callback)
+  : Node("sub", option),
+    cancel_callback_(cancel_callback),
+    sync3_(
+      this, {"point0", "point1", "point2"}, std::chrono::milliseconds{100},
+      std::chrono::milliseconds{30},
+      rclcpp::SubscriptionOptionsWithAllocator<std::allocator<void>>(),
+      std::bind(&Sub3Node::getTime, this, std::placeholders::_1),
+      std::bind(&Sub3Node::getTime, this, std::placeholders::_1),
+      std::bind(&Sub3Node::getTime, this, std::placeholders::_1))
+  {
+    sync3_.registerCallback(std::bind(
+      &Sub3Node::callback3, this, std::placeholders::_1, std::placeholders::_2,
+      std::placeholders::_3));
+  }
+  bool is_synchronized = false;
+
+private:
+  std::function<void()> cancel_callback_;
+  rclcpp::Time getTime(const PointCloudType data)
+  {
+    return pcl_conversions::fromPCL(data->header).stamp;
+  }
 
   message_synchronizer::MessageSynchronizer3<AdaptedType, AdaptedType, AdaptedType> sync3_;
   void callback3(
@@ -122,6 +130,36 @@ private:
     EXPECT_TRUE(msg1);
     EXPECT_TRUE(msg2);
     cancel_callback_();
+  }
+};
+
+class Sub4Node : public rclcpp::Node
+{
+public:
+  explicit Sub4Node(
+    const rclcpp::NodeOptions & option, const std::function<void()> & cancel_callback)
+  : Node("sub", option),
+    cancel_callback_(cancel_callback),
+    sync4_(
+      this, {"point0", "point1", "point2", "point3"}, std::chrono::milliseconds{100},
+      std::chrono::milliseconds{30},
+      rclcpp::SubscriptionOptionsWithAllocator<std::allocator<void>>(),
+      std::bind(&Sub4Node::getTime, this, std::placeholders::_1),
+      std::bind(&Sub4Node::getTime, this, std::placeholders::_1),
+      std::bind(&Sub4Node::getTime, this, std::placeholders::_1),
+      std::bind(&Sub4Node::getTime, this, std::placeholders::_1))
+  {
+    sync4_.registerCallback(std::bind(
+      &Sub4Node::callback4, this, std::placeholders::_1, std::placeholders::_2,
+      std::placeholders::_3, std::placeholders::_4));
+  }
+  bool is_synchronized = false;
+
+private:
+  std::function<void()> cancel_callback_;
+  rclcpp::Time getTime(const PointCloudType data)
+  {
+    return pcl_conversions::fromPCL(data->header).stamp;
   }
 
   message_synchronizer::MessageSynchronizer4<AdaptedType, AdaptedType, AdaptedType, AdaptedType>
@@ -145,7 +183,37 @@ TEST(TypeAdaptaer, Sync2Topics)
   rclcpp::NodeOptions options;
   options.use_intra_process_comms(true);
   rclcpp::executors::SingleThreadedExecutor exec;
-  const auto sub_node = std::make_shared<SubNode>(options, [&]() { exec.cancel(); });
+  const auto sub_node = std::make_shared<Sub2Node>(options, [&]() { exec.cancel(); });
+  const auto pub_node = std::make_shared<PubNode>(options);
+  exec.add_node(sub_node);
+  exec.add_node(pub_node);
+  exec.spin();
+  rclcpp::shutdown();
+  EXPECT_TRUE(sub_node->is_synchronized);
+}
+
+TEST(TypeAdaptaer, Sync3Topics)
+{
+  rclcpp::init(0, nullptr);
+  rclcpp::NodeOptions options;
+  options.use_intra_process_comms(true);
+  rclcpp::executors::SingleThreadedExecutor exec;
+  const auto sub_node = std::make_shared<Sub3Node>(options, [&]() { exec.cancel(); });
+  const auto pub_node = std::make_shared<PubNode>(options);
+  exec.add_node(sub_node);
+  exec.add_node(pub_node);
+  exec.spin();
+  rclcpp::shutdown();
+  EXPECT_TRUE(sub_node->is_synchronized);
+}
+
+TEST(TypeAdaptaer, Sync4Topics)
+{
+  rclcpp::init(0, nullptr);
+  rclcpp::NodeOptions options;
+  options.use_intra_process_comms(true);
+  rclcpp::executors::SingleThreadedExecutor exec;
+  const auto sub_node = std::make_shared<Sub4Node>(options, [&]() { exec.cancel(); });
   const auto pub_node = std::make_shared<PubNode>(options);
   exec.add_node(sub_node);
   exec.add_node(pub_node);
