@@ -87,7 +87,9 @@ private:
   {
     is_synchronized = true;
     EXPECT_TRUE(msg0);
+    EXPECT_STREQ(std::string(msg0.value()->header.frame_id).c_str(), "base_link");
     EXPECT_TRUE(msg1);
+    EXPECT_STREQ(std::string(msg1.value()->header.frame_id).c_str(), "base_link");
     cancel_callback_();
   }
 };
@@ -127,8 +129,11 @@ private:
   {
     is_synchronized = true;
     EXPECT_TRUE(msg0);
+    EXPECT_STREQ(std::string(msg0.value()->header.frame_id).c_str(), "base_link");
     EXPECT_TRUE(msg1);
+    EXPECT_STREQ(std::string(msg1.value()->header.frame_id).c_str(), "base_link");
     EXPECT_TRUE(msg2);
+    EXPECT_STREQ(std::string(msg2.value()->header.frame_id).c_str(), "base_link");
     cancel_callback_();
   }
 };
@@ -170,9 +175,13 @@ private:
   {
     is_synchronized = true;
     EXPECT_TRUE(msg0);
+    EXPECT_STREQ(std::string(msg0.value()->header.frame_id).c_str(), "base_link");
     EXPECT_TRUE(msg1);
+    EXPECT_STREQ(std::string(msg1.value()->header.frame_id).c_str(), "base_link");
     EXPECT_TRUE(msg2);
+    EXPECT_STREQ(std::string(msg2.value()->header.frame_id).c_str(), "base_link");
     EXPECT_TRUE(msg3);
+    EXPECT_STREQ(std::string(msg3.value()->header.frame_id).c_str(), "base_link");
     cancel_callback_();
   }
 };
