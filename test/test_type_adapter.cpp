@@ -38,6 +38,7 @@ public:
   }
   void publish()
   {
+    std::cout << __FILE__ << "," << __LINE__ << std::endl;
     PointCloudType point_cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
     std_msgs::msg::Header header;
     header.frame_id = "base_link";
@@ -58,8 +59,10 @@ public:
 class SubNode : public rclcpp::Node
 {
 public:
-  explicit SubNode(const rclcpp::NodeOptions & option)
+  explicit SubNode(
+    const rclcpp::NodeOptions & option, const std::function<void()> & cancel_callback)
   : Node("sub", option),
+    cancel_callback_(cancel_callback),
     sync2_(
       this, {"point0", "point1"}, std::chrono::milliseconds{100}, std::chrono::milliseconds{30},
       rclcpp::SubscriptionOptionsWithAllocator<std::allocator<void>>(),
@@ -93,6 +96,7 @@ public:
   bool is_synchronized = false;
 
 private:
+  std::function<void()> cancel_callback_;
   rclcpp::Time getTime(const PointCloudType data)
   {
     return pcl_conversions::fromPCL(data->header).stamp;
@@ -105,6 +109,7 @@ private:
     is_synchronized = true;
     EXPECT_TRUE(msg0);
     EXPECT_TRUE(msg1);
+    cancel_callback_();
   }
 
   message_synchronizer::MessageSynchronizer3<AdaptedType, AdaptedType, AdaptedType> sync3_;
@@ -116,6 +121,7 @@ private:
     EXPECT_TRUE(msg0);
     EXPECT_TRUE(msg1);
     EXPECT_TRUE(msg2);
+    cancel_callback_();
   }
 
   message_synchronizer::MessageSynchronizer4<AdaptedType, AdaptedType, AdaptedType, AdaptedType>
@@ -129,6 +135,7 @@ private:
     EXPECT_TRUE(msg1);
     EXPECT_TRUE(msg2);
     EXPECT_TRUE(msg3);
+    cancel_callback_();
   }
 };
 
@@ -137,13 +144,12 @@ TEST(TypeAdaptaer, Sync2Topics)
   rclcpp::init(0, nullptr);
   rclcpp::NodeOptions options;
   options.use_intra_process_comms(true);
-  const auto sub_node = std::make_shared<SubNode>(options);
-  const auto pub_node = std::make_shared<PubNode>(options);
   rclcpp::executors::SingleThreadedExecutor exec;
+  const auto sub_node = std::make_shared<SubNode>(options, [&]() { exec.cancel(); });
+  const auto pub_node = std::make_shared<PubNode>(options);
   exec.add_node(sub_node);
   exec.add_node(pub_node);
-  using namespace std::chrono_literals;
-  exec.spin_some(1s);
+  exec.spin();
   rclcpp::shutdown();
   EXPECT_TRUE(sub_node->is_synchronized);
 }
