@@ -33,8 +33,6 @@ public:
     pub1_ = create_publisher<AdaptedType>("point1", 1);
     pub2_ = create_publisher<AdaptedType>("point2", 1);
     pub3_ = create_publisher<AdaptedType>("point3", 1);
-    // using namespace std::chrono_literals;
-    // timer_ = this->create_wall_timer(20ms, std::bind(&PubNode::publish, this));
   }
   void publish(const PointCloudType & point_cloud)
   {
