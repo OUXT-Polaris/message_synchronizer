@@ -47,19 +47,9 @@ public:
     get_timestamp_function_(get_timestamp_function),
     buffer_size_(buffer_size)
   {
-    if constexpr (rosidl_generator_traits::is_message<MessageType>::value) {
-      sub_ = rclcpp::create_subscription<MessageType>(
-        node, topic_name, rclcpp::QoS(buffer_size),
-        [this](const std::shared_ptr<MessageType> msg) {
-          MessageType data = *msg;
-          buffer_.push_back(data);
-          while (buffer_.size() > buffer_size_) {
-            buffer_.pop_front();
-          }
-        },
-        options);
-    }
-    if constexpr (rclcpp::is_type_adapter<MessageType>::value) {
+    if constexpr (
+      rosidl_generator_traits::is_message<MessageType>::value ||
+      rclcpp::is_type_adapter<MessageType>::value) {
       sub_ = rclcpp::create_subscription<MessageType>(
         node, topic_name, rclcpp::QoS(buffer_size),
         [this](const std::shared_ptr<NativeMessageType> msg) {
