@@ -28,31 +28,65 @@ class SubNode : public rclcpp::Node
 public:
   explicit SubNode(const rclcpp::NodeOptions & option)
   : Node("example", option),
-    sync_(
-      this,
-      {"/perception/front_lidar/points_transform_node/output",
-       "/perception/rear_lidar/points_transform_node/output"},
-      std::chrono::milliseconds{100}, std::chrono::milliseconds{30},
+    sync2_(
+      this, {"point0", "point1"}, std::chrono::milliseconds{100}, std::chrono::milliseconds{30},
       rclcpp::SubscriptionOptionsWithAllocator<std::allocator<void>>(),
-      [](const PointCloudType data) { return pcl_conversions::fromPCL(data->header).stamp; },
-      [](const PointCloudType data) { return pcl_conversions::fromPCL(data->header).stamp; })
+      std::bind(&SubNode::getTime, this, std::placeholders::_1),
+      std::bind(&SubNode::getTime, this, std::placeholders::_1)),
+    sync3_(
+      this, {"point0", "point1", "point2"}, std::chrono::milliseconds{100},
+      std::chrono::milliseconds{30},
+      rclcpp::SubscriptionOptionsWithAllocator<std::allocator<void>>(),
+      std::bind(&SubNode::getTime, this, std::placeholders::_1),
+      std::bind(&SubNode::getTime, this, std::placeholders::_1),
+      std::bind(&SubNode::getTime, this, std::placeholders::_1)),
+    sync4_(
+      this, {"point0", "point1", "point2", "point3"}, std::chrono::milliseconds{100},
+      std::chrono::milliseconds{30},
+      rclcpp::SubscriptionOptionsWithAllocator<std::allocator<void>>(),
+      std::bind(&SubNode::getTime, this, std::placeholders::_1),
+      std::bind(&SubNode::getTime, this, std::placeholders::_1),
+      std::bind(&SubNode::getTime, this, std::placeholders::_1),
+      std::bind(&SubNode::getTime, this, std::placeholders::_1))
   {
-    sync_.registerCallback(
+    sync2_.registerCallback(
       std::bind(&SubNode::callback2, this, std::placeholders::_1, std::placeholders::_2));
+    sync3_.registerCallback(std::bind(
+      &SubNode::callback3, this, std::placeholders::_1, std::placeholders::_2,
+      std::placeholders::_3));
   }
 
 private:
-  message_synchronizer::MessageSynchronizer2<AdaptedType, AdaptedType> sync_;
+  rclcpp::Time getTime(const PointCloudType data)
+  {
+    return pcl_conversions::fromPCL(data->header).stamp;
+  }
+
+  message_synchronizer::MessageSynchronizer2<AdaptedType, AdaptedType> sync2_;
   void callback2(
     const std::optional<PointCloudType> & msg0, const std::optional<PointCloudType> & msg1)
   {
-    if (msg0) {
-      std::cout << __FILE__ << "," << __LINE__ << std::endl;
+    if (msg0 && msg1) {
     }
-    if (msg1) {
-      std::cout << __FILE__ << "," << __LINE__ << std::endl;
+  }
+
+  message_synchronizer::MessageSynchronizer3<AdaptedType, AdaptedType, AdaptedType> sync3_;
+  void callback3(
+    const std::optional<PointCloudType> & msg0, const std::optional<PointCloudType> & msg1,
+    const std::optional<PointCloudType> & msg2)
+  {
+    if (msg0 && msg1 && msg2) {
     }
-    std::cout << __FILE__ << "," << __LINE__ << std::endl;
+  }
+
+  message_synchronizer::MessageSynchronizer4<AdaptedType, AdaptedType, AdaptedType, AdaptedType>
+    sync4_;
+  void callback4(
+    const std::optional<PointCloudType> & msg0, const std::optional<PointCloudType> & msg1,
+    const std::optional<PointCloudType> & msg2, const std::optional<PointCloudType> & msg3)
+  {
+    if (msg0 && msg1 && msg2 && msg3) {
+    }
   }
 };
 
