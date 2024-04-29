@@ -51,7 +51,7 @@ private:
   message_synchronizer::MessageSynchronizer2<
     sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2>
     sync_;
-  message_synchronizer::StampedMessageSubscriber<AdaptedType, PointCloudType> sub_;
+  message_synchronizer::StampedMessageSubscriber<AdaptedType> sub_;
   //   void callback(
   //     const std::optional<sensor_msgs::msg::PointCloud2> & msg0,
   //     const std::optional<sensor_msgs::msg::PointCloud2> & msg1)

@@ -28,7 +28,25 @@
 
 namespace message_synchronizer
 {
-template <typename MessageType, typename NativeMessageType = MessageType>
+template <typename M, bool is_adapter = rclcpp::is_type_adapter<M>::value>
+struct message_type;
+
+template <typename M>
+struct message_type<M, true>
+{
+  using type = typename M::custom_type;
+};
+
+template <typename M>
+struct message_type<M, false>
+{
+  using type = M;
+};
+
+template <typename M>
+using message_type_t = typename message_type<M>::type;
+
+template <typename MessageType, typename NativeMessageType = message_type_t<MessageType>>
 class StampedMessageSubscriber
 {
 public:
