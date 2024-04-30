@@ -38,7 +38,6 @@ public:
   }
   void publish()
   {
-    std::cout << __FILE__ << "," << __LINE__ << std::endl;
     PointCloudType point_cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
     std_msgs::msg::Header header;
     header.frame_id = "base_link";
